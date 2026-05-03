@@ -160,7 +160,7 @@ def main(conf: HydraConfig) -> None:
                 chi1_stack.append(tors_t[:,:])
                 plddt_stack.append(plddt[0]) # remove singleton leading dimension
                 
-                print("Sequence of Hotspot Residues:","".join(conversion[i] for i in torch.argmax(seq_t, dim=1)[sampler.ab_item.hotspots]))
+                print("Sequence of Hotspot Residues:","".join(conversion[i] for i in torch.argmax(seq_t, dim=1)[sampler.ab_item.hotspots.cpu()]))
                 if conf.antibody.terminate_bad_targeting is not None:
                     #TODO move to a separate function to avoid repetition
                     # Loop through the hotspots, find the closest loop residue by Cb distance
@@ -234,10 +234,10 @@ def main(conf: HydraConfig) -> None:
             Cb = generate_Cbeta(N=denoised_xyz_stack[0,:,0], Ca=denoised_xyz_stack[0,:,1], C=denoised_xyz_stack[0,:,2])
 
             # We are going to assume constructed Cb is identical to original Cb - NRB
-            dist = torch.cdist(Cb[sampler.ab_item.hotspots], Cb[sampler.ab_item.loop_mask]) # [hotspot_L, loop_L]
+            dist = torch.cdist(Cb[sampler.ab_item.hotspots.cpu()], Cb[sampler.ab_item.loop_mask.cpu()]) # [hotspot_L, loop_L]
 
             mindist = torch.min(dist, dim=1).values # The min distance for each hotspot
-            
+
             overallmin = torch.min(mindist) # The distance of the closest hotspot to a loop
             averagemin = torch.mean(mindist) # The average distance of the hotspots to a loop
 
@@ -260,7 +260,7 @@ def main(conf: HydraConfig) -> None:
         ####################################
         if sampler.ab_design():
             # Also mark hotspots in ab design
-            bfacts[sampler.ab_item.hotspots] = 0
+            bfacts[sampler.ab_item.hotspots.cpu()] = 0
 
             if sampler.inf_conf.quiver is None:
                 # Write as PDB files
