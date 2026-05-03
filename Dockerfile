@@ -8,6 +8,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 # Install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
+ENV OMP_NUM_THREADS=8
+ENV MKL_NUM_THREADS=8
 
 # Set the working directory to the user's home directory
 WORKDIR /home

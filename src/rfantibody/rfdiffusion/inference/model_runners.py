@@ -390,13 +390,7 @@ class AbSampler(Sampler):
 
         else:
             # We are doing full diffusion, so we need to adjust the loop lengths
-            ic(self.pose.length())
-            ic(self.pose.binder_len())
-            ic(self.pose.L.seq)
             self.pose.adjust_loop_lengths(self.ab_conf.design_loops)
-            ic(self.pose.length())
-            ic(self.pose.binder_len())
-            ic(self.pose.L.seq)
 
 
         #### 3) Assemble the ab_item for use downstream. Also determine which residues we should design
@@ -483,8 +477,6 @@ class AbSampler(Sampler):
 
         self.denoiser = self.construct_denoiser(self.L, visible=self.diffusion_mask)
 
-        ic(self.ab_item.loop_mask)
-        ic(self.ab_item.hotspots)
         return xT, seq_T
 
     def _preprocess(self, seq, xyz_t, t):
@@ -559,7 +551,6 @@ class AbSampler(Sampler):
         if (t < self.diffuser.T) and (t != self.diffuser_conf.partial_T) \
             and self.preprocess_conf.selfcondition_msaprev and self.preprocess_conf.msaprev_bugfix:
 
-            ic('Providing Ab Seq Self Cond')
             msa_prev = self.msa_prev
 
         else:
@@ -570,7 +561,6 @@ class AbSampler(Sampler):
         ##################################
         if (t < self.diffuser.T) and (t != self.diffuser_conf.partial_T):
 
-            ic('Providing Ab Str Self Cond')
             xyz_t, t2d, xyz_sc, sc2d = process_selfcond(self.prev_pred, t2d, xyz_t, self.ab_conf, xyz_t.device)
 
             # Correct selfcond now will detect from the checkpoint file whether it
@@ -588,10 +578,6 @@ class AbSampler(Sampler):
             # The non-selfcond step for antibodies is to just leave the input as-is
             sc2d, xyz_sc = process_init_selfcond(t2d, xyz_t, self.ab_conf, xyz_t.device)
         
-        print('Monitoring target centering')
-        ic(xyz_t[0,0,self.diffusion_mask,1].mean(dim=0))
-        ic(xt_in[0,self.diffusion_mask,1].mean(dim=0))
-
         with torch.no_grad():
             px0=xt_in
             for rec in range(self.recycle_schedule[t-1]):

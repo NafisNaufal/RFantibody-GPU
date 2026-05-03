@@ -44,6 +44,11 @@ def make_deterministic(seed=0):
 @hydra.main(version_base=None, config_path='config/inference', config_name='base')
 def main(conf: HydraConfig) -> None:
     log = logging.getLogger(__name__)
+
+    num_threads = int(os.environ.get('RFANTIBODY_NUM_THREADS', 8))
+    torch.set_num_threads(num_threads)
+    torch.set_num_interop_threads(num_threads)
+
     if conf.inference.deterministic:
         make_deterministic()
 
