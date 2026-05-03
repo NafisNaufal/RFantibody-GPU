@@ -118,7 +118,10 @@ def correct_selfcond(
                      xyz_true: torch.Tensor(),
                      loop_mask: torch.Tensor(),
                      target_mask: torch.Tensor(),
-                     interchain_mask: torch.Tensor()
+                     interchain_mask: torch.Tensor(),
+                     t2d_true_precomputed=None,
+                     target_mask2d_precomputed=None,
+                     binder_mask2d_precomputed=None,
                     ) -> torch.Tensor:
     '''
         Given t2d calculated from the model's previous prediction, correct the target and framework Ab
@@ -145,19 +148,23 @@ def correct_selfcond(
         print('Not correcting templated regions in the self conditioning t2d feature')
         return t2d
 
-    print('Correcting constant t2d entries')
+    if t2d_true_precomputed is not None:
+        t2d_true = t2d_true_precomputed.to(t2d.device)
+    else:
+        t2d_true = xyz_to_t2d(xyz_true[None,None]).to(t2d.device)
+        zeros = torch.zeros_like(t2d_true[...,:1]).to(t2d.device)
+        t2d_true = torch.cat((t2d_true,zeros), dim=-1)
 
-    t2d_true = xyz_to_t2d(xyz_true[None,None]).to(t2d.device) # [B,T,L,L,44]
+    if target_mask2d_precomputed is not None:
+        target_mask2d = target_mask2d_precomputed
+    else:
+        target_mask2d = target_mask[None] * target_mask[:,None]
 
-    zeros = torch.zeros_like(t2d_true[...,:1]).to(t2d.device) # [B,T,L,L,1]
-    t2d_true = torch.cat((t2d_true,zeros), dim=-1) # [B,T,L,L,45]; Added selfcond one-hot dimension
-
-    target_mask2d = target_mask[None] * target_mask[:,None]
-
-    design_mask   = ~target_mask * ~loop_mask # This is a mask of the constant binder region
-
-    # We are leaving out the interchain contacts
-    binder_mask2d = design_mask[None] * design_mask[:,None] * ~interchain_mask
+    if binder_mask2d_precomputed is not None:
+        binder_mask2d = binder_mask2d_precomputed
+    else:
+        design_mask   = ~target_mask * ~loop_mask
+        binder_mask2d = design_mask[None] * design_mask[:,None] * ~interchain_mask
 
     t2d[...,44] = 1 # All entries in t2d originally come from self conditioning so we will mark them as true
     t2d[...,43] = 0 # Mark all entries initially as non-templates - this will be updated below

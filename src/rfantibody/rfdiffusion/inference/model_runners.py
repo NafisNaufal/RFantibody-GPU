@@ -477,6 +477,20 @@ class AbSampler(Sampler):
 
         self.denoiser = self.construct_denoiser(self.L, visible=self.diffusion_mask)
 
+        # Precompute static t2d entries derived from xyz_true — these never change
+        # across timesteps, so computing them once avoids an O(L²) CPU op every step.
+        t2d_true = xyz_to_t2d(self.ab_item.inputs.xyz_true[None, None])
+        zeros = torch.zeros_like(t2d_true[..., :1])
+        self._t2d_true_precomputed = torch.cat((t2d_true, zeros), dim=-1)  # [1,1,L,L,45]
+
+        target_mask = self.ab_item.target_mask
+        loop_mask   = self.ab_item.loop_mask
+        self._target_mask2d_precomputed = target_mask[None] * target_mask[:, None]
+        design_mask = ~target_mask * ~loop_mask
+        self._binder_mask2d_precomputed = (
+            design_mask[None] * design_mask[:, None] * ~self.ab_item.interchain_mask
+        )
+
         return xT, seq_T
 
     def _preprocess(self, seq, xyz_t, t):
@@ -571,7 +585,10 @@ class AbSampler(Sampler):
                                     self.ab_item.inputs.xyz_true,
                                     self.ab_item.loop_mask,
                                     self.ab_item.target_mask,
-                                    self.ab_item.interchain_mask
+                                    self.ab_item.interchain_mask,
+                                    t2d_true_precomputed=self._t2d_true_precomputed,
+                                    target_mask2d_precomputed=self._target_mask2d_precomputed,
+                                    binder_mask2d_precomputed=self._binder_mask2d_precomputed,
                                   )
 
         else:
