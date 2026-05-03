@@ -184,7 +184,8 @@ def apply_templating_scheme(item,
                             t2d,
                             T_scheme,
                             hotspot_dim,
-                            timestep):
+                            timestep,
+                            t2d_true=None):
     '''
     Take the template features which have been featurized normally and apply the selected
     templating scheme to them
@@ -218,16 +219,18 @@ def apply_templating_scheme(item,
     '''
 
     ret_xyz_t = torch.clone(xyz_t)
+    device = xyz_t.device
 
-    # For all templating shemes, we will need the true t2d
-    ret_t2d = xyz_to_t2d(item.inputs.xyz_true[None,None]).squeeze(0) # [T,L,L,44]
+    # For all templating schemes, we will need the true t2d
+    if t2d_true is not None:
+        ret_t2d = t2d_true.clone()
+    else:
+        ret_t2d = xyz_to_t2d(item.inputs.xyz_true[None,None]).squeeze(0).to(device)
 
     # Annotate which residues in t1d are missing/masked
     ret_t1d = torch.clone(t1d)
-    ret_t1d[:,~item.loop_mask,20] = 0 
-    ret_t1d[:,item.loop_mask,20]  = 1 
-
-    ic(f'Featurizing with {T_scheme}')
+    ret_t1d[:,~item.loop_mask,20] = 0
+    ret_t1d[:,item.loop_mask,20]  = 1
 
     if item.inputs.fixed_dock or T_scheme == 'fixed_dock':
         ######################################################
@@ -293,7 +296,7 @@ def apply_templating_scheme(item,
             ret_t2d[:,:,item.loop_mask] = 0
 
             # This is a mask that only selects the intrachain ab contacts
-            ab_intrachain_mask = torch.zeros(L,L).bool() # [L,L]
+            ab_intrachain_mask = torch.zeros(L,L, device=device).bool() # [L,L]
 
             offset = 0
             if item.target and item.target_mask[0]:
@@ -404,15 +407,15 @@ def apply_templating_scheme(item,
                 L = item.loop_mask.shape[0]
 
                 # Order in pdb is always T,H,L. Can use this to mask Ab-interchain contacts
-                item.ab_interchain_mask = torch.zeros(L,L).bool() # [L,L]
+                item.ab_interchain_mask = torch.zeros(L,L, device=device).bool() # [L,L]
 
                 offset = 0
                 if item.target and item.target_mask[0]:
                     offset += item.T['xyz'].shape[0]
                 if item.H is not None and item.L is not None:
                    # There exists an ab interchain region to mask
-                   H_mask = torch.zeros(L,L).bool()
-                   L_mask = torch.zeros(L,L).bool()
+                   H_mask = torch.zeros(L,L, device=device).bool()
+                   L_mask = torch.zeros(L,L, device=device).bool()
 
                    H_end_idx = offset+item.H['xyz'].shape[0]
                    H_mask[offset:H_end_idx, offset:H_end_idx] = 1
@@ -484,7 +487,11 @@ def featurize(item,
               T_scheme,
               timestep,
               mask_all_sc,
-              bugfix_t1d_mask):
+              bugfix_t1d_mask,
+              tor_indices=None,
+              tor_can_flip=None,
+              ref_angles=None,
+              t2d_true_templating=None):
     '''
     Takes a sequence and a noised structure and returns features ready to be fed into the model
 
@@ -529,20 +536,21 @@ def featurize(item,
     '''
 
     L = seq.shape[0]
-    
+    device = xyz.device
+
     ## seq ##
     #########
     seq_feat = torch.clone(seq).unsqueeze(0) # (I,L,22)
-    
+
     ## msa_masked ##
     ################
-    msa_masked = torch.zeros((1,1,L,48))
+    msa_masked = torch.zeros((1,1,L,48), device=device)
     msa_masked[:,:,:,:22] = seq[None, None]
     msa_masked[:,:,:,22:44] = seq[None, None] # (I,N,L,48)
-    
+
     ## msa_full ##
     ##############
-    msa_full = torch.zeros((1,1,L,25))
+    msa_full = torch.zeros((1,1,L,25), device=device)
     msa_full[:,:,:,:22] = seq[None, None] # (I,N,L,25)
 
     ## xyz_t ##
@@ -560,7 +568,7 @@ def featurize(item,
 
     ## t1d ##
     #########
-    t1d = torch.zeros((1,L,d_t1d)) # (1,L,d_t1d)
+    t1d = torch.zeros((1,L,d_t1d), device=device) # (1,L,d_t1d)
     # We will mask the sequence in t1d in the apply_templating_scheme call
     t1d[:,:,:20] = seq[None,:,:20]
     if bugfix_t1d_mask:
@@ -574,7 +582,10 @@ def featurize(item,
     ## alpha_t ##
     #############
     seq_tmp = t1d[...,:-1].argmax(dim=-1).reshape(-1,L)
-    alpha, _, alpha_mask, _ = util.get_torsions(xyz_t.reshape(-1,L,27,3), seq_tmp, TOR_INDICES, TOR_CAN_FLIP, REF_ANGLES)
+    _tor_indices  = tor_indices  if tor_indices  is not None else TOR_INDICES.to(device)
+    _tor_can_flip = tor_can_flip if tor_can_flip is not None else TOR_CAN_FLIP.to(device)
+    _ref_angles   = ref_angles   if ref_angles   is not None else REF_ANGLES.to(device)
+    alpha, _, alpha_mask, _ = util.get_torsions(xyz_t.reshape(-1,L,27,3), seq_tmp, _tor_indices, _tor_can_flip, _ref_angles)
     alpha_mask = torch.logical_and(alpha_mask, ~torch.isnan(alpha[...,0]))
     alpha[torch.isnan(alpha)] = 0.0
     alpha = alpha.reshape(1,-1,L,10,2)
@@ -592,7 +603,8 @@ def featurize(item,
                                                t2d,
                                                T_scheme,
                                                hotspot_dim,
-                                               timestep
+                                               timestep,
+                                               t2d_true=t2d_true_templating,
                                              )
 
     input_dict = {

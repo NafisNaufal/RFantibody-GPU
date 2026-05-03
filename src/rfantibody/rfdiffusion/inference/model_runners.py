@@ -491,6 +491,21 @@ class AbSampler(Sampler):
             design_mask[None] * design_mask[:, None] * ~self.ab_item.interchain_mask
         )
 
+        # Precompute static t2d_true for apply_templating_scheme (no extra zeros dim)
+        self._t2d_true_templating = t2d_true.squeeze(0).to(self.device)  # [1,L,L,44]
+
+        # Pre-move item masks to GPU so featurize runs entirely on GPU
+        self.ab_item.loop_mask = self.ab_item.loop_mask.to(self.device)
+        self.ab_item.target_mask = self.ab_item.target_mask.to(self.device)
+        self.ab_item.interchain_mask = self.ab_item.interchain_mask.to(self.device)
+        if torch.is_tensor(self.ab_item.hotspots):
+            self.ab_item.hotspots = self.ab_item.hotspots.to(self.device)
+
+        # Pre-move torsion constants to GPU
+        self._tor_indices_gpu  = TOR_INDICES.to(self.device)
+        self._tor_can_flip_gpu = TOR_CAN_FLIP.to(self.device)
+        self._ref_angles_gpu   = REF_ANGLES.to(self.device)
+
         return xT, seq_T
 
     def _preprocess(self, seq, xyz_t, t):
@@ -505,32 +520,36 @@ class AbSampler(Sampler):
         ## 1) Generate the time-dependent features
         ################################################
 
-        tmp_xyz = torch.full((L,27,3), np.nan)
-        tmp_xyz[:,:14] = xyz_t # [L,27,3]
+        tmp_xyz = torch.full((L,27,3), np.nan, device=self.device)
+        tmp_xyz[:,:14] = xyz_t.to(self.device)
 
         # Featurize expects xyz to have 27 atom dimensions
         features = featurize(
                              self.ab_item,
-                             seq,
+                             seq.to(self.device),
                              tmp_xyz,
                              self.preprocess_conf.d_t1d,
                              self.preprocess_conf.hotspot_dim,
                              self.ab_conf.T_scheme,
                              1 - (t / self.T),
                              ~self.preprocess_conf.motif_sidechain_input,
-                             ~self.ab_conf.no_bugfix_t1d_mask
+                             ~self.ab_conf.no_bugfix_t1d_mask,
+                             tor_indices=self._tor_indices_gpu,
+                             tor_can_flip=self._tor_can_flip_gpu,
+                             ref_angles=self._ref_angles_gpu,
+                             t2d_true_templating=self._t2d_true_templating,
                             )
 
         ## 2) Now generate the time-invariant features
         ################################################
-        
+
         ## idx_pdb ##
         #############
 
-        idx_pdb = torch.arange(L) # (L)
+        idx_pdb = torch.arange(L, device=self.device)
         if self.ab_item.target:
             idx_pdb[self.ab_item.target_mask] += 200 # Do idx jump at chainbreak
-        
+
         ## Add hotspots to t1d ##
         #########################
         features['t1d'][...,22] = self.ab_item.hotspots[None,None]
