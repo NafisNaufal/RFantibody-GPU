@@ -210,19 +210,13 @@ def get_next_ca(xt, px0, t, diffusion_mask, crd_scale, beta_schedule, alphabar_s
     mu, sigma = get_mu_xt_x0(xt, px0, t, beta_schedule=beta_schedule, alphabar_schedule=alphabar_schedule)
     
     if rotation_scaling is None:
-        sampled_crds = torch.normal(mu, torch.sqrt(sigma*noise_scale))
+        sampled_crds = mu + torch.randn_like(mu) * float(sigma * noise_scale) ** 0.5
     else:
         sampled_crds = mu
     delta = sampled_crds - xt[:,1,:] #check sign of this is correct
 
     if not diffusion_mask is None:
-        # calculate the mean displacement between the current motif and where 
-        # RoseTTAFold thinks it should go 
-        # print('Got motif delta')
-        # motif_delta = (px0[diffusion_mask,:3,...] - xt[diffusion_mask,:3,...]).mean(0).mean(0)
-
-        delta[diffusion_mask,...] = 0
-        # delta[diffusion_mask,...] = motif_delta
+        delta[diffusion_mask.to(delta.device), ...] = 0
 
     out_crds = xt + delta[:, None, :]
 
@@ -865,7 +859,8 @@ class Denoise():
                         seq_next, num_classes=22).float()
         
         if include_motif_sidechains:
-            fullatom_next[:,diffusion_mask,:14] = xt[None,diffusion_mask]
+            dm = diffusion_mask.to(xt.device)
+            fullatom_next[:,dm,:14] = xt[None,dm]
 
         return fullatom_next.squeeze()[:,:14,:], seq_next, torsions_next, px0
 
