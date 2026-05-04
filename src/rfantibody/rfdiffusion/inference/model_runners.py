@@ -614,7 +614,7 @@ class AbSampler(Sampler):
             # The non-selfcond step for antibodies is to just leave the input as-is
             sc2d, xyz_sc = process_init_selfcond(t2d, xyz_t, self.ab_conf, xyz_t.device)
         
-        with torch.no_grad(), torch.autocast('cuda', dtype=torch.bfloat16):
+        with torch.no_grad():
             px0=xt_in
             for rec in range(self.recycle_schedule[t-1]):
                 msa_prev, pair_prev, px0, state_prev, alpha, logits, plddt = self.model(msa_masked,
@@ -643,13 +643,12 @@ class AbSampler(Sampler):
                     t2d   = xyz_to_t2d(xyz_t) # [B,T,L,L,44]
                     px0=xt_in
 
-        self.prev_pred = torch.clone(px0.float())
-        self.msa_prev  = torch.clone(msa_prev.float())
+        self.prev_pred = torch.clone(px0)
+        self.msa_prev  = torch.clone(msa_prev)
 
         # prediction of X0
-        with torch.autocast('cuda', dtype=torch.bfloat16):
-            _, px0 = self.allatom(torch.argmax(seq_in, dim=-1), px0, alpha)
-        px0 = px0.float().squeeze()[:,:14]
+        _, px0  = self.allatom(torch.argmax(seq_in, dim=-1), px0, alpha)
+        px0     = px0.squeeze()[:,:14]
 
         # Default method of decoding sequence
         seq_probs   = torch.nn.Softmax(dim=-1)(logits.squeeze()/self.inf_conf.softmax_T)
