@@ -160,7 +160,6 @@ def main(conf: HydraConfig) -> None:
                 chi1_stack.append(tors_t[:,:])
                 plddt_stack.append(plddt[0]) # remove singleton leading dimension
                 
-                print("Sequence of Hotspot Residues:","".join(conversion[i] for i in torch.argmax(seq_t, dim=1)[sampler.ab_item.hotspots.cpu()]))
                 if conf.antibody.terminate_bad_targeting is not None:
                     #TODO move to a separate function to avoid repetition
                     # Loop through the hotspots, find the closest loop residue by Cb distance

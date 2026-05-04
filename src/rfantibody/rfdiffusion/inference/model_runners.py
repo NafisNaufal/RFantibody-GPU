@@ -157,7 +157,7 @@ class Sampler:
         else:
             self.symmetry = None
 
-        self.allatom = ComputeAllAtomCoords().to(self.device)
+        self.allatom = torch.compile(ComputeAllAtomCoords().to(self.device), dynamic=True, mode='reduce-overhead')
         
         if not self.ab_design():
             if self.inf_conf.input_pdb is None:
@@ -262,6 +262,7 @@ class Sampler:
             model.load_state_dict(self.ckpt['final_state_dict'],strict=True)
         else:
             model.load_state_dict(self.ckpt['model_state_dict'], strict=True)
+        model = torch.compile(model, dynamic=True, mode='reduce-overhead')
         return model
 
     def construct_contig(self, target_feats):
@@ -614,7 +615,7 @@ class AbSampler(Sampler):
             # The non-selfcond step for antibodies is to just leave the input as-is
             sc2d, xyz_sc = process_init_selfcond(t2d, xyz_t, self.ab_conf, xyz_t.device)
         
-        with torch.no_grad():
+        with torch.no_grad(), torch.autocast('cuda', dtype=torch.bfloat16):
             px0=xt_in
             for rec in range(self.recycle_schedule[t-1]):
                 msa_prev, pair_prev, px0, state_prev, alpha, logits, plddt = self.model(msa_masked,
@@ -633,7 +634,7 @@ class AbSampler(Sampler):
                                     state_prev = None,
                                     t=torch.tensor(t),
                                     return_infer=True,
-                                    motif_mask=self.diffusion_mask.squeeze().to(self.device))   
+                                    motif_mask=self.diffusion_mask.squeeze().to(self.device))
 
                 # To permit 'recycling' within a timestep, in a manner akin to how this model was trained
                 # Aim is to basically just replace the xyz_t with the model's last px0, and to *not* recycle the state, pair or msa embeddings
@@ -643,12 +644,13 @@ class AbSampler(Sampler):
                     t2d   = xyz_to_t2d(xyz_t) # [B,T,L,L,44]
                     px0=xt_in
 
-        self.prev_pred = torch.clone(px0)
-        self.msa_prev  = torch.clone(msa_prev)
+        self.prev_pred = torch.clone(px0.float())
+        self.msa_prev  = torch.clone(msa_prev.float())
 
         # prediction of X0
-        _, px0  = self.allatom(torch.argmax(seq_in, dim=-1), px0, alpha)
-        px0     = px0.squeeze()[:,:14]
+        with torch.autocast('cuda', dtype=torch.bfloat16):
+            _, px0 = self.allatom(torch.argmax(seq_in, dim=-1), px0, alpha)
+        px0 = px0.float().squeeze()[:,:14]
 
         # Default method of decoding sequence
         seq_probs   = torch.nn.Softmax(dim=-1)(logits.squeeze()/self.inf_conf.softmax_T)
