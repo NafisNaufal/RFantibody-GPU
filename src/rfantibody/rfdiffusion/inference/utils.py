@@ -821,8 +821,8 @@ class Denoise():
         # This can be moved to below where the full atom representation is calculated to allow for potentials involving sidechains
         
         grad_ca = self.get_potential_gradients(seq_t.clone(), xt.clone(), diffusion_mask=diffusion_mask)
-    
-        ca_deltas += self.potential_manager.get_guide_scale(t) * grad_ca
+
+        ca_deltas += self.potential_manager.get_guide_scale(t) * grad_ca.to(ca_deltas.device)
         
         # add the delta to the new frames
         frames_next = frames_next.to(ca_deltas.device) + ca_deltas[:,None,:]  # translate
