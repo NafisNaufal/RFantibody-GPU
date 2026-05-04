@@ -49,8 +49,6 @@ def _resolve_path(path: Optional[Path]) -> Optional[Path]:
               help='Final diffusion step (default: 1)')
 @click.option('--deterministic', is_flag=True,
               help='Enable deterministic mode for reproducibility')
-@click.option('--design-startnum', type=int, default=0,
-              help='Starting design index (default: 0, used for parallel runs)')
 @click.option('--no-trajectory', is_flag=True,
               help='Disable trajectory output files')
 @click.option('--extra', '-e', type=str, multiple=True,
@@ -66,7 +64,6 @@ def rfdiffusion(
     weights: Optional[Path],
     diffuser_t: int,
     final_step: int,
-    design_startnum: int,
     deterministic: bool,
     no_trajectory: bool,
     extra: tuple
@@ -120,7 +117,6 @@ def rfdiffusion(
 
     # Design parameters
     cmd.append(f'inference.num_designs={num_designs}')
-    cmd.append(f'inference.design_startnum={design_startnum}')
 
     # Parse design loops into Hydra format
     loops_list = [l.strip() for l in design_loops.split(',')]
