@@ -157,7 +157,7 @@ class Sampler:
         else:
             self.symmetry = None
 
-        self.allatom = torch.compile(ComputeAllAtomCoords().to(self.device), dynamic=True, mode='reduce-overhead')
+        self.allatom = ComputeAllAtomCoords().to(self.device)
         
         if not self.ab_design():
             if self.inf_conf.input_pdb is None:
@@ -262,7 +262,6 @@ class Sampler:
             model.load_state_dict(self.ckpt['final_state_dict'],strict=True)
         else:
             model.load_state_dict(self.ckpt['model_state_dict'], strict=True)
-        model = torch.compile(model, dynamic=True, mode='reduce-overhead')
         return model
 
     def construct_contig(self, target_feats):
