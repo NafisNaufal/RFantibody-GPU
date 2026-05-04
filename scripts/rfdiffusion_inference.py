@@ -49,6 +49,7 @@ def main(conf: HydraConfig) -> None:
     torch.set_num_threads(num_threads)
     torch.set_num_interop_threads(num_threads)
     torch.set_float32_matmul_precision('high')  # enables TF32 on A100/L40 tensor cores
+    torch.backends.cudnn.benchmark = True
 
     if conf.inference.deterministic:
         make_deterministic()
