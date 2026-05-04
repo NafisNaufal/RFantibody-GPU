@@ -456,6 +456,16 @@ class IGSO3():
                 )
         return score_norm_t
 
+    def _score_norm_torch(self, t, omega):
+        """PyTorch-native score_norm via linear interpolation (device-agnostic)."""
+        sigma_idx = self.t_to_idx(t)
+        x = torch.as_tensor(self.igso3_vals['discrete_omega'], dtype=omega.dtype, device=omega.device)
+        y = torch.as_tensor(self.igso3_vals['score_norm'][sigma_idx], dtype=omega.dtype, device=omega.device)
+        idx = torch.clamp(torch.bucketize(omega, x) - 1, 0, len(x) - 2)
+        x0, x1 = x[idx], x[idx + 1]
+        y0, y1 = y[idx], y[idx + 1]
+        return y0 + (omega - x0) / (x1 - x0 + 1e-10) * (y1 - y0)
+
     def score_vec(self, ts, vec):
         """score_vec computes the score of the IGSO(3) density as a rotation
         vector. This score vecotr is in the direction of the sampled vector,
@@ -633,37 +643,36 @@ class IGSO3():
 
 
     def reverse_sample_vectorized(self, R_t, R_0, t, noise_level, mask=None, return_perturb=False, rotation_scaling=None):
-        """ Vectorized version of reverse_sample() """
+        """ Vectorized version of reverse_sample(). Pure PyTorch — no scipy/numpy. """
 
-        R_0, R_t = torch.tensor(R_0), torch.tensor(R_t)
+        R_0 = torch.as_tensor(R_0, dtype=torch.float32)
+        R_t = torch.as_tensor(R_t, dtype=torch.float32)
+        device = R_t.device
+
         R_0t = torch.einsum('...ij,...kj->...ik', R_t, R_0)
-        R_0t_rotvec = torch.tensor(scipy_R.from_matrix(
-                    R_0t.cpu().numpy()).as_rotvec()).to(R_0.device)
+        R_0t_rotvec = rotation_conversions.matrix_to_axis_angle(R_0t)
 
+        Omega = torch.linalg.norm(R_0t_rotvec, dim=-1)
+        Score_approx = R_0t_rotvec * (self._score_norm_torch(t, Omega) / (Omega + 1e-8))[:, None]
 
-        Omega = torch.linalg.norm(R_0t_rotvec, axis=-1).numpy()
-        Score_approx = R_0t_rotvec*(self.score_norm(t, Omega)/Omega)[:,None]
+        continuous_t = t / self.T
+        rot_g = self.g(continuous_t).to(device)
 
-        continuous_t = t/self.T
-        rot_g = self.g(continuous_t).to(Score_approx.device)
+        Z = torch.randn(R_0.shape[0], 3, device=device) * noise_level
 
-        Z = np.random.normal(size=(R_0.shape[0], 3))
-        Z = torch.from_numpy(Z).to(Score_approx.device)
-        Z *= noise_level
-        
         if rotation_scaling is None:
             Perturb_rotvec = (rot_g ** 2) * self.step_size * Score_approx + rot_g * np.sqrt(self.step_size) * Z
         else:
             Perturb_rotvec = (rot_g ** 2) * self.step_size * Score_approx * 0.5 * rotation_scaling
 
-        if mask is not None: Perturb_rotvec *= (1-mask.long())[:,None]
+        if mask is not None:
+            Perturb_rotvec *= (1 - mask.long())[:, None]
 
         Perturb = rotation_conversions.axis_angle_to_matrix(Perturb_rotvec)
-        if return_perturb :
+        if return_perturb:
             return Perturb
 
         Interp_rot = torch.einsum('...ij,...jk->...ik', Perturb, R_t)
-
         return Interp_rot
 
 class SLERP():

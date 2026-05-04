@@ -15,6 +15,7 @@ from omegaconf import DictConfig
 from scipy.spatial.transform import Rotation as scipy_R
 from scipy.spatial.transform import Slerp
 
+import rfantibody.rfdiffusion.rotation_conversions as rotation_conversions
 import rfantibody.rfdiffusion.util as util
 from rfantibody.rfdiffusion.diff_util import (
     get_aa_schedule,
@@ -35,6 +36,15 @@ from rfantibody.rfdiffusion.util import rigid_from_3_points
 from rfantibody.rfdiffusion.util import torsion_can_flip as TOR_CAN_FLIP
 from rfantibody.rfdiffusion.util import torsion_indices as TOR_INDICES
 from rfantibody.rfdiffusion.util_module import ComputeAllAtomCoords
+
+def _normalize_rot(R):
+    """Project (..., 3, 3) matrices onto SO(3) via SVD. Device-agnostic."""
+    U, _, Vh = torch.linalg.svd(R)
+    d = torch.linalg.det(U @ Vh)  # (...,), ±1
+    diag = torch.ones(*d.shape, 3, device=R.device, dtype=R.dtype)
+    diag[..., -1] = d
+    return U @ (torch.diag_embed(diag) @ Vh)
+
 
 ###########################################################
 #### Functions which can be called outside of Denoiser ####
@@ -95,13 +105,9 @@ def slerp_update_vectorized(R_t, R_0, t, mask=0):
 
 def get_next_frames(xt, px0, t, diffuser, so3_type, diffusion_mask, noise_scale=1., rotation_scaling=None):
     """get_next_frames gets updated frames using either SLERP or the IGSO(3) + score_based reverse diffusion.
-    
 
-    based on self.so3_type use slerp or score based update.
+    Pure PyTorch implementation — no scipy/numpy, device-agnostic.
 
-    SLERP xt frames towards px0, by factor 1/t
-    Rather than generating random rotations (as occurs during forward process), calculate rotation between xt and px0
-   
     Args:
         xt: noised coordinates of shape [L, 14, 3]
         px0: prediction of coordinates at t=0, of shape [L, 14, 3]
@@ -111,72 +117,48 @@ def get_next_frames(xt, px0, t, diffuser, so3_type, diffusion_mask, noise_scale=
         diffusion_mask: of shape [L] of type bool, True means not to be
             updated (e.g. mask is true for motif residues)
         noise_scale: scale factor for the noise added (IGSO3 only)
-    
-    Returns:
-        backbone coordinates for step x_t-1 of shape [L, 3, 3]
-    """
-    N_0  = px0[None,:,0,:]
-    Ca_0 = px0[None,:,1,:]
-    C_0  = px0[None,:,2,:]
 
+    Returns:
+        backbone coordinates for step x_t-1 of shape [L, 3, 3] as a torch.Tensor
+    """
+    device = xt.device
+
+    N_0  = px0[None,:,0,:].to(device)
+    Ca_0 = px0[None,:,1,:].to(device)
+    C_0  = px0[None,:,2,:].to(device)
     R_0, Ca_0 = rigid_from_3_points(N_0, Ca_0, C_0)
 
     N_t  = xt[None, :, 0, :]
     Ca_t = xt[None, :, 1, :]
     C_t  = xt[None, :, 2, :]
-
     R_t, Ca_t = rigid_from_3_points(N_t, Ca_t, C_t)
 
-    # this must be to normalize them or something
-    R_0 = scipy_R.from_matrix(R_0.squeeze().numpy()).as_matrix()
-    R_t = scipy_R.from_matrix(R_t.squeeze().numpy()).as_matrix()
-
+    # Normalize rotation matrices onto SO(3) via SVD (pure PyTorch, replaces scipy)
+    R_0 = _normalize_rot(R_0.squeeze())  # [L, 3, 3]
+    R_t = _normalize_rot(R_t.squeeze())  # [L, 3, 3]
 
     L = R_t.shape[0]
-    all_rot_transitions = np.broadcast_to(np.identity(3), (L, 3, 3)).copy()
-    # Sample next frame for each residue
+    all_rot_transitions = torch.eye(3, device=device, dtype=R_t.dtype).unsqueeze(0).expand(L, -1, -1).clone()
+
     if so3_type == "igso3":
-        # don't do calculations on masked positions since they end up as identity matrix
-        all_rot_transitions[~diffusion_mask] = diffuser.so3_diffuser.reverse_sample_vectorized(R_t[~diffusion_mask], R_0[~diffusion_mask], t, 
-                                                                                        noise_level=noise_scale, mask=None, return_perturb=True, rotation_scaling=rotation_scaling)
+        all_rot_transitions[~diffusion_mask] = diffuser.so3_diffuser.reverse_sample_vectorized(
+            R_t[~diffusion_mask], R_0[~diffusion_mask], t,
+            noise_level=noise_scale, mask=None, return_perturb=True, rotation_scaling=rotation_scaling)
     elif so3_type == "slerp":
-        vect_all_rot_transitions[~diffusion_mask] = slerp_update_vectorized(R_t[~diffusion_mask], R_0[~diffusion_mask], t, 
-                                                                                                    mask=diffusion_mask[~diffusion_mask])    
+        all_rot_transitions[~diffusion_mask] = slerp_update_vectorized(
+            R_t[~diffusion_mask], R_0[~diffusion_mask], t,
+            mask=diffusion_mask[~diffusion_mask])
     else:
-        assert False, "so3 diffusion type %s not implemented"%so3_type
+        assert False, "so3 diffusion type %s not implemented" % so3_type
 
-    all_rot_transitions = all_rot_transitions[:,None,:,:]
+    all_rot_transitions = all_rot_transitions.unsqueeze(1)  # [L, 1, 3, 3]
 
+    Ca_t_sq = Ca_t.squeeze()  # [L, 3]
+    xt_backbone = xt[:, :3, :]  # [L, 3, 3]
+    next_crds = (torch.einsum('lrij,laj->lrai', all_rot_transitions, xt_backbone - Ca_t_sq[:, None, :])
+                 + Ca_t_sq[:, None, None, :])
 
-    assert_vectorized_is_equal = False
-    if assert_vectorized_is_equal:
-        # Sample next frame for each residue
-        check_all_rot_transitions = []
-        for i in range(len(xt)):
-            r_0 = R_0[i] #.as_matrix()
-            r_t = R_t[i] #.as_matrix()
-            mask_i = diffusion_mask[i]
-
-            if so3_type == "igso3":
-                r_t_next = diffuser.so3_diffuser.reverse_sample(r_t, r_0, t,
-                        mask=mask_i, noise_level=noise_scale)[None,...]
-                interp_rot =  r_t_next @ (r_t.T)
-            elif so3_type == "slerp":
-                interp_rot = slerp_update(r_t, r_0, t, diffusion_mask[i])
-            else:
-                assert False, "so3 diffusion type %s not implemented"%so3_type
-
-            check_all_rot_transitions.append(interp_rot)
-
-        check_all_rot_transitions = np.stack(check_all_rot_transitions, axis=0)
-
-        assert np.allclose(check_all_rot_transitions, all_rot_transitions)
-
-    # Apply the interpolated rotation matrices to the coordinates
-    next_crds   = np.einsum('lrij,laj->lrai', all_rot_transitions, xt[:,:3,:] - Ca_t.squeeze()[:,None,...].numpy()) + Ca_t.squeeze()[:,None,None,...].numpy()
-
-    # (L,3,3) set of backbone coordinates with slight rotation 
-    return next_crds.squeeze(1)
+    return next_crds.squeeze(1)  # [L, 3, 3]
 
 def get_mu_xt_x0(xt, px0, t, beta_schedule, alphabar_schedule, eps=1e-6):
     """
@@ -218,10 +200,9 @@ def get_next_ca(xt, px0, t, diffusion_mask, crd_scale, beta_schedule, alphabar_s
         noise_scale: scale factor for the noise being added
 
     """
-    get_allatom = ComputeAllAtomCoords().to(device=xt.device)
     L = len(xt)
 
-    # bring to origin after global alignment (when don't have a motif) or replace input motif and bring to origin, and then scale 
+    # bring to origin after global alignment (when don't have a motif) or replace input motif and bring to origin, and then scale
     px0 = px0 * crd_scale
     xt = xt * crd_scale
 
@@ -880,8 +861,8 @@ class Denoise():
     
         ca_deltas += self.potential_manager.get_guide_scale(t) * grad_ca
         
-        # add the delta to the new frames 
-        frames_next = torch.from_numpy(frames_next) + ca_deltas[:,None,:]  # translate
+        # add the delta to the new frames
+        frames_next = frames_next.to(ca_deltas.device) + ca_deltas[:,None,:]  # translate
 
         if diffuse_sidechains:
             if self.seq_diffuser:
