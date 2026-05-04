@@ -157,14 +157,7 @@ class Sampler:
         else:
             self.symmetry = None
 
-        _allatom = ComputeAllAtomCoords().to(self.device)
-        try:
-            import triton  # noqa: F401
-            _allatom = torch.compile(_allatom, dynamic=True, mode='reduce-overhead')
-            self._log.info('torch.compile enabled for ComputeAllAtomCoords')
-        except (ImportError, Exception):
-            self._log.info('torch.compile unavailable for ComputeAllAtomCoords — eager mode')
-        self.allatom = _allatom
+        self.allatom = ComputeAllAtomCoords().to(self.device)
         
         if not self.ab_design():
             if self.inf_conf.input_pdb is None:
@@ -269,12 +262,6 @@ class Sampler:
             model.load_state_dict(self.ckpt['final_state_dict'],strict=True)
         else:
             model.load_state_dict(self.ckpt['model_state_dict'], strict=True)
-        try:
-            import triton  # noqa: F401
-            model = torch.compile(model, dynamic=True, mode='reduce-overhead')
-            self._log.info('torch.compile enabled for RoseTTAFoldModule')
-        except (ImportError, Exception):
-            self._log.info('torch.compile unavailable for RoseTTAFoldModule — eager mode')
         return model
 
     def construct_contig(self, target_feats):
