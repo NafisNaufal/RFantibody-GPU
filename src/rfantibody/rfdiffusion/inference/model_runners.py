@@ -672,8 +672,7 @@ class AbSampler(Sampler):
                 align_motif=self.inf_conf.align_motif,
                 include_motif_sidechains=self.preprocess_conf.motif_sidechain_input
             )
-            self._log.info(
-                    f'Timestep {t}, input to next step: { seq2chars(torch.argmax(seq_t_1, dim=-1).tolist())}')
+            self._log.info(f'Timestep {t} done')
         else:
             x_t_1 = torch.clone(px0).to(x_t.device)
             seq_t_1 = pseq_0
