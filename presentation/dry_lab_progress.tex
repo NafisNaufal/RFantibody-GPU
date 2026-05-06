@@ -429,52 +429,51 @@ Bottleneck   & \textcolor{GPUBlue}{\textbf{GPU}} & \textcolor{CPURed}{\textbf{CP
 \sectionslide{7. \ Future Work}
 
 \begin{frame}{Batching Would Unlock the Full Potential of the L40}
-\vspace{0.2cm}
-\begin{columns}[T]
-\begin{column}{0.60\textwidth}
+\begin{center}
 \begin{tikzpicture}[
   bar/.style={draw=NavyBlue!25, fill=NavyBlue!5, rounded corners=3pt,
-              minimum width=10.5cm, minimum height=0.85cm},
+              minimum width=12.0cm, minimum height=0.8cm},
   dbox/.style={draw=GPUBlue, fill=GPUBlue!25, rounded corners=2pt,
-               minimum width=2.4cm, minimum height=0.65cm,
+               minimum width=2.6cm, minimum height=0.6cm,
                font=\scriptsize\bfseries\sffamily, text=GPUBlue},
   gbox/.style={draw=Green!70, fill=Green!18, rounded corners=2pt,
-               minimum width=1.08cm, minimum height=0.65cm,
-               font=\tiny\bfseries\sffamily, text=Green!80!black},
+               minimum width=1.2cm, minimum height=0.6cm,
+               font=\scriptsize\bfseries\sffamily, text=Green!80!black},
   lbl/.style={font=\small\bfseries\sffamily, text=NavyBlue}
 ]
-  % B=1
-  \node[lbl] at (3.5, 2.5) {Current: $B = 1$};
-  \node[bar] at (3.5, 1.8) {};
-  \node[dbox] at (0.2, 1.8) {Design 1};
-  \node[font=\scriptsize\sffamily, text=MidGray] at (4.5, 1.8)
-    {GPU idle};
-  \node[font=\tiny\sffamily, text=MidGray] at (3.5, 1.1)
-    {$\approx$15--30\% GPU utilisation on A100/L40};
+  % B=1 row
+  \node[lbl] at (0, 2.2) {Current: $B=1$};
+  \node[bar] at (0, 1.55) {};
+  \node[dbox] at (-4.2, 1.55) {Design 1};
+  \node[font=\scriptsize\sffamily, text=MidGray] at (1.5, 1.55) {GPU idle ($\approx$15--30\% utilisation)};
 
   % Arrow
-  \draw[-{Stealth}, NavyBlue!40, line width=1.2pt] (3.5, 0.9) -- (3.5, 0.55);
+  \draw[-{Stealth}, NavyBlue!40, line width=1.2pt] (0, 1.05) -- (0, 0.65);
 
-  % B=8
-  \node[lbl] at (3.5, 0.3) {With Batching: $B = 8$};
-  \node[bar] at (3.5, -0.4) {};
+  % B=8 row
+  \node[lbl] at (0, 0.35) {With Batching: $B=8$};
+  \node[bar] at (0, -0.35) {};
   \foreach \i in {1,...,8}{
-    \node[gbox] at ({-4.1 + (\i-1)*1.18cm}, -0.4) {\i};
+    \node[gbox] at ({-4.95 + (\i-1)*1.41cm}, -0.35) {\i};
   }
-  \node[font=\tiny\sffamily, text=MidGray] at (3.5, -1.1)
+  \node[font=\tiny\sffamily, text=MidGray] at (0, -0.95)
     {$\approx$4--6$\times$ throughput · same model load · one GPU};
 \end{tikzpicture}
-\end{column}
-\begin{column}{0.37\textwidth}
+\end{center}
+\vspace{0.1cm}
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
   \begin{alertblock}{Requires Refactoring}
     \small
-    \begin{itemize}\setlength\itemsep{3pt}
+    \begin{itemize}\setlength\itemsep{2pt}
       \item Stack $B$ designs per forward pass
-      \item ContigMap supports variable lengths
-      \item Denoising loop handles batched tensors
+      \item ContigMap handles variable lengths
+      \item Denoising loop operates on batched tensors
     \end{itemize}
   \end{alertblock}
-  \vspace{0.3cm}
+\end{column}
+\begin{column}{0.42\textwidth}
+  \vspace{0.15cm}
   \small\textcolor{MidGray}{Estimated: $\sim$1--2 min per design on A100 at $B{=}8$, vs.\ 14.5 min today.}
 \end{column}
 \end{columns}
