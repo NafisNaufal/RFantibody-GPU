@@ -1,56 +1,51 @@
 \documentclass[aspectratio=169, 10pt]{beamer}
 \usetheme{metropolis}
 
-% ── Font: force Helvetica sans-serif (works with pdflatex, no Fira Sans needed)
+% ── Font: use professional sans-serif without requiring Fira Sans ──────────────
+\usefonttheme{professionalfonts}
 \usepackage[T1]{fontenc}
-\usepackage{helvet}
-\renewcommand{\familydefault}{\sfdefault}
+\usepackage{lmodern}
 
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta, positioning, decorations.pathreplacing}
+\usetikzlibrary{arrows.meta, positioning, decorations.pathreplacing, calc}
 \usepackage{booktabs}
 \usepackage{xcolor}
 \usepackage{amsmath}
 
-% ── Colour palette ────────────────────────────────────────────────────────────
+% ── Colour palette ─────────────────────────────────────────────────────────────
 \definecolor{NavyBlue}{HTML}{1B3A5C}
 \definecolor{SteelBlue}{HTML}{2E75B6}
 \definecolor{LightBlue}{HTML}{BDD7EE}
 \definecolor{Amber}{HTML}{E67E22}
 \definecolor{Green}{HTML}{27AE60}
-\definecolor{LightGray}{HTML}{F5F5F5}
+\definecolor{LightGray}{HTML}{F2F2F2}
 \definecolor{MidGray}{HTML}{7F7F7F}
 \definecolor{CPURed}{HTML}{C0392B}
 \definecolor{GPUBlue}{HTML}{2980B9}
 
-% ── Metropolis overrides ───────────────────────────────────────────────────────
+% ── Theme overrides ────────────────────────────────────────────────────────────
 \setbeamercolor{normal text}{fg=NavyBlue, bg=white}
 \setbeamercolor{frametitle}{bg=NavyBlue, fg=white}
 \setbeamercolor{title separator}{fg=SteelBlue}
 \setbeamercolor{progress bar}{fg=SteelBlue, bg=NavyBlue!20}
 \setbeamercolor{alerted text}{fg=Amber}
-\setbeamercolor{block title}{bg=NavyBlue!10, fg=NavyBlue}
-\setbeamercolor{block body}{bg=LightGray, fg=NavyBlue}
-\setbeamercolor{block title alerted}{bg=CPURed!15, fg=CPURed}
-\setbeamercolor{block body alerted}{bg=CPURed!5, fg=NavyBlue}
+\setbeamercolor{block title}{bg=SteelBlue!15, fg=NavyBlue}
+\setbeamercolor{block body}{bg=LightGray}
 \setbeamerfont{frametitle}{size=\large, series=\bfseries, family=\sffamily}
 \setbeamerfont{title}{size=\LARGE, series=\bfseries, family=\sffamily}
-\setbeamerfont{block title}{series=\bfseries, family=\sffamily}
 
-% ── Section divider ───────────────────────────────────────────────────────────
+% ── Section divider helper ─────────────────────────────────────────────────────
 \newcommand{\sectionslide}[1]{%
   \begin{frame}[plain]
     \begin{tikzpicture}[remember picture, overlay]
       \fill[NavyBlue] (current page.south west) rectangle (current page.north east);
-      \node[white, font=\Large\bfseries\sffamily, align=center]
-        at (current page.center) {#1};
+      \node[white, font=\Large\bfseries\sffamily] at (current page.center) {#1};
     \end{tikzpicture}
   \end{frame}
 }
 
-% ── Metadata ──────────────────────────────────────────────────────────────────
 \title{RFdiffusion Inference Optimization}
 \subtitle{Dry Lab Progress Update}
 \institute{iGEM Team}
@@ -59,77 +54,72 @@
 \begin{document}
 
 % ══════════════════════════════════════════════════════════════════════════════
-%  TITLE
+% TITLE
 % ══════════════════════════════════════════════════════════════════════════════
 \begin{frame}[plain]
 \begin{tikzpicture}[remember picture, overlay]
   \fill[NavyBlue] (current page.south west) rectangle (current page.north east);
   \fill[SteelBlue]
     ([yshift=-0.36\paperheight]current page.north west) rectangle
-    ([yshift=-0.41\paperheight]current page.north east);
+    ([yshift=-0.40\paperheight]current page.north east);
   \node[white, font=\Large\bfseries\sffamily, align=left, anchor=west]
     at ([xshift=1.2cm, yshift=0.10\paperheight]current page.west)
     {RFdiffusion Inference Optimization};
   \node[LightBlue, font=\normalsize\sffamily, align=left, anchor=west]
     at ([xshift=1.2cm, yshift=0.02\paperheight]current page.west)
     {Dry Lab Progress Update};
-  \node[white!70!NavyBlue, font=\small\sffamily, align=left, anchor=west]
+  \node[LightBlue!60!NavyBlue, font=\small\sffamily, align=left, anchor=west]
     at ([xshift=1.2cm, yshift=-0.06\paperheight]current page.west)
     {iGEM Team};
-  \node[white!50!NavyBlue, font=\small\sffamily, anchor=south east]
-    at ([xshift=-1cm, yshift=0.5cm]current page.south east) {\today};
+  \node[LightBlue!50!NavyBlue, font=\small\sffamily, anchor=south east]
+    at ([xshift=-1cm, yshift=0.4cm]current page.south east) {\today};
 \end{tikzpicture}
 \end{frame}
 
 % ══════════════════════════════════════════════════════════════════════════════
-%  1. PROJECT CONTEXT
+% 1. PROJECT CONTEXT
 % ══════════════════════════════════════════════════════════════════════════════
-\sectionslide{1.\ \ Project Context}
+\sectionslide{1. \ Project Context}
 
-\begin{frame}{RFantibody is Central to Our Design Pipeline}
-\vspace{0.2cm}
+\begin{frame}{RFantibody Pipeline — Where We Intervened}
+\vspace{0.3cm}
+\begin{center}
 \begin{tikzpicture}[
-  box/.style={draw=NavyBlue, fill=NavyBlue!8, rounded corners=4pt,
-              minimum width=3.0cm, minimum height=1.2cm,
+  box/.style={draw=NavyBlue, fill=NavyBlue!7, rounded corners=4pt,
+              minimum width=2.6cm, minimum height=1.3cm,
               align=center, font=\small\bfseries\sffamily, text=NavyBlue},
-  arr/.style={-{Stealth}, NavyBlue, thick}
+  arr/.style={-{Stealth[scale=0.9]}, NavyBlue, thick},
+  sub/.style={font=\tiny\sffamily, text=MidGray}
 ]
-  \node[box] (diff) at (0, 0)
-    {RFdiffusion\\[2pt]{\tiny\color{MidGray}Backbone Design}};
-  \node[box, right=1.6cm of diff] (mpnn)
-    {ProteinMPNN\\[2pt]{\tiny\color{MidGray}Sequence Design}};
-  \node[box, right=1.6cm of mpnn] (rf2)
-    {RF2\\[2pt]{\tiny\color{MidGray}Structure Prediction}};
-  \node[draw=Green!70, fill=Green!8, rounded corners=4pt,
-        minimum width=2.8cm, minimum height=1.2cm,
-        align=center, font=\small\bfseries\sffamily, text=Green!80!black,
-        right=1.6cm of rf2] (fil)
-    {Filtering\\[2pt]{\tiny\color{MidGray}pAE $\cdot$ RMSD $\cdot$ ddG}};
+  \node[box] (diff) at (0,0)    {RFdiffusion\\\scriptsize Backbone Design};
+  \node[box] (mpnn) at (3.8,0)  {ProteinMPNN\\\scriptsize Sequence Design};
+  \node[box] (rf2)  at (7.6,0)  {RF2\\\scriptsize Structure Prediction};
+  \node[box, draw=Green!60, fill=Green!8, text=Green!70!black]
+             (filt) at (11.4,0) {Filtering\\\scriptsize pAE · RMSD · ddG};
 
   \draw[arr] (diff.east) -- (mpnn.west);
   \draw[arr] (mpnn.east) -- (rf2.west);
-  \draw[arr] (rf2.east)  -- (fil.west);
+  \draw[arr] (rf2.east)  -- (filt.west);
 
-  % Highlight optimized step
-  \draw[CPURed, thick, rounded corners=4pt]
-    ([xshift=-2pt, yshift=2pt]diff.north west) rectangle
-    ([xshift=2pt,  yshift=-2pt]diff.south east);
-  \node[CPURed, font=\tiny\bfseries\sffamily, above=2pt of diff] {\textbf{Optimized}};
+  % Highlight optimized module
+  \draw[CPURed, thick, rounded corners=5pt]
+    ([xshift=-3pt,yshift=3pt]diff.north west) rectangle
+    ([xshift=3pt,yshift=-3pt]diff.south east);
+  \node[CPURed, font=\tiny\bfseries\sffamily, above=2pt of diff] {$\bigstar$ Optimized};
 
-  % Scale note
-  \node[MidGray, font=\scriptsize\sffamily, align=center, below=1.2cm of mpnn]
-    {$\sim$1,000--10,000 designs per target needed for viable campaigns};
-
-  % PoC note
-  \node[Amber, font=\scriptsize\bfseries\sffamily, align=center, below=0.4cm of diff]
-    {PoC: \textit{Listeria} InlA $\;\rightarrow\;$ MASLD target};
+  % Annotations
+  \node[Amber, font=\scriptsize\bfseries\sffamily, below=0.5cm of diff, align=center]
+    {PoC: \textit{Listeria} InlA\\[-1pt]\tiny before MASLD target};
+  \node[MidGray, font=\tiny\sffamily, below=0.5cm of mpnn, align=center]
+    {1{,}000--10{,}000 designs\\[-1pt]per target required};
 \end{tikzpicture}
+\end{center}
 \end{frame}
 
 % ══════════════════════════════════════════════════════════════════════════════
-%  2. PROBLEM IDENTIFICATION
+% 2. PROBLEM
 % ══════════════════════════════════════════════════════════════════════════════
-\sectionslide{2.\ \ Problem Identification}
+\sectionslide{2. \ Problem Identification}
 
 \begin{frame}{The A100 Server Was Slower Than a Desktop GPU}
 \begin{columns}[c]
@@ -137,39 +127,39 @@
 \begin{tikzpicture}
 \begin{axis}[
   ybar, bar width=1.1cm,
-  width=7.0cm, height=5.5cm,
+  width=6.8cm, height=5.8cm,
   ymin=0, ymax=20,
   ylabel={Minutes per Design},
   ylabel style={font=\small\sffamily},
-  symbolic x coords={RTX 3060, A100},
+  symbolic x coords={RTX~3060\\(Desktop), A100\\(Server)},
   xtick=data,
-  xticklabel style={font=\small\sffamily},
+  xticklabel style={align=center, font=\small\sffamily},
+  ytick={0,5,10,15,20},
   yticklabel style={font=\small\sffamily},
+  ymajorgrids=true,
+  grid style={dashed, NavyBlue!15},
+  nodes near coords,
+  nodes near coords style={font=\small\bfseries\sffamily, text=NavyBlue},
   axis line style={NavyBlue},
   tick style={NavyBlue},
-  ymajorgrids=true,
-  grid style={dashed, LightBlue!40},
-  nodes near coords,
-  nodes near coords style={font=\small\bfseries\sffamily, color=NavyBlue},
 ]
 \addplot[fill=SteelBlue!60, draw=NavyBlue] coordinates {
-  (RTX 3060, 10.5)
-  (A100,     16.0)
+  ({RTX~3060\\(Desktop)}, 10.5)
+  ({A100\\(Server)},       16.0)
 };
 \end{axis}
 \end{tikzpicture}
 \end{column}
-\begin{column}{0.46\textwidth}
+\begin{column}{0.47\textwidth}
   \begin{block}{The Paradox}
     \small
-    The A100 has \textbf{6$\times$ the compute} of an RTX~3060,\\
-    yet was \textbf{50\% slower} per design.
+    The A100 has \textbf{6$\times$ the compute} of an RTX~3060, yet was \textbf{52\% slower} per design.
   \end{block}
   \vspace{0.5cm}
-  \begin{alertblock}{At 1,000 Designs}
+  \begin{alertblock}{At 1{,}000 Designs}
     \small
-    \textbf{A100:}\ \ \ $\approx$267 hours\\
-    \textbf{RTX 3060:} $\approx$175 hours\\[0.3em]
+    \textbf{A100:} $\approx$267 hours\\
+    \textbf{RTX 3060:} $\approx$175 hours\\[4pt]
     The expensive server was the wrong choice.
   \end{alertblock}
 \end{column}
@@ -177,397 +167,391 @@
 \end{frame}
 
 % ══════════════════════════════════════════════════════════════════════════════
-%  3. ROOT CAUSE ANALYSIS
+% 3. ROOT CAUSE
 % ══════════════════════════════════════════════════════════════════════════════
-\sectionslide{3.\ \ Root Cause Analysis}
+\sectionslide{3. \ Root Cause Analysis}
 
-\begin{frame}{CPU--GPU Round-Trips Stalled the Pipeline Every Timestep}
-\vspace{0.3cm}
-\resizebox{\textwidth}{!}{%
+\begin{frame}{Every Timestep Was Stalling the GPU Pipeline}
+\vspace{0.2cm}
+\begin{center}
 \begin{tikzpicture}[
-  gpu/.style={draw=GPUBlue, fill=GPUBlue!18, rounded corners=3pt,
-              minimum width=2.1cm, minimum height=0.75cm,
-              align=center, font=\scriptsize\bfseries\sffamily, text=GPUBlue},
-  cpu/.style={draw=CPURed,  fill=CPURed!18,  rounded corners=3pt,
-              minimum width=2.1cm, minimum height=0.75cm,
-              align=center, font=\scriptsize\bfseries\sffamily, text=CPURed},
-  arr/.style={-{Stealth[scale=0.7]}, thick}
+  gpu/.style={rounded corners=3pt, minimum width=2.1cm, minimum height=0.65cm,
+              fill=GPUBlue!18, draw=GPUBlue, align=center,
+              font=\scriptsize\bfseries\sffamily, text=GPUBlue},
+  cpu/.style={rounded corners=3pt, minimum width=2.1cm, minimum height=0.65cm,
+              fill=CPURed!18, draw=CPURed, align=center,
+              font=\scriptsize\bfseries\sffamily, text=CPURed},
+  arr/.style={-{Stealth[scale=0.7]}, thick},
+  lbl/.style={font=\tiny\sffamily}
 ]
 
-% ── Original row ──────────────────────────────────────────────────────────────
-\node[font=\small\bfseries\sffamily, text=NavyBlue, anchor=west] at (-0.2, 1.8)
-  {Original\ (per timestep):};
+%% Original
+\node[font=\small\bfseries\sffamily, text=NavyBlue, anchor=west] at (-0.2, 1.6) {Original:};
+\node[gpu] (g1) at (1.3, 0.9) {GPU\\Forward};
+\node[cpu] (c1) at (3.7, 0.9) {CPU\\SO(3)};
+\node[cpu] (c2) at (6.1, 0.9) {CPU\\Kabsch};
+\node[gpu] (g2) at (8.5, 0.9) {GPU\\Forward};
+\node[lbl, text=MidGray] at (10.3, 0.9) {$\cdots\times50$};
 
-\node[gpu] (g1)   at (1.3,  1.0) {GPU\\Forward Pass};
-\node[cpu] (c1)   at (3.7,  1.0) {CPU\\SO(3) Sample};
-\node[cpu] (c2)   at (6.1,  1.0) {CPU\\Kabsch Align};
-\node[gpu] (g2)   at (8.5,  1.0) {GPU\\Forward Pass};
-\node[font=\scriptsize\sffamily, text=MidGray] at (10.2, 1.0) {$\cdots\!\times\!50$};
-
-\draw[arr, GPUBlue] (g1.east) -- node[below, font=\tiny\sffamily, text=CPURed]
-  {.cpu()} (c1.west);
+\draw[arr, GPUBlue] (g1.east) -- node[above,lbl,text=CPURed]{\texttt{.cpu()}} (c1.west);
 \draw[arr, CPURed]  (c1.east) -- (c2.west);
-\draw[arr, CPURed]  (c2.east) -- node[below, font=\tiny\sffamily, text=GPUBlue]
-  {.to(gpu)} (g2.west);
-\draw[arr, GPUBlue] (g2.east) -- (10.0, 1.0);
+\draw[arr, CPURed]  (c2.east) -- node[above,lbl,text=GPUBlue]{\texttt{.to(gpu)}} (g2.west);
+\draw[arr, GPUBlue] (g2.east) -- (10.0, 0.9);
 
-\draw[decorate, decoration={brace, amplitude=5pt, raise=2pt}, CPURed]
-  (c1.north west) -- (c2.north east)
-  node[midway, above=8pt, font=\tiny\bfseries\sffamily, text=CPURed]
+\draw[decorate, decoration={brace,amplitude=4pt}, CPURed, thick]
+  ([yshift=4pt]c1.north west) -- ([yshift=4pt]c2.north east)
+  node[midway, above=5pt, font=\tiny\bfseries\sffamily, text=CPURed]
     {GPU stalled — waiting for CPU};
 
-% ── Divider ───────────────────────────────────────────────────────────────────
-\draw[MidGray!30, dashed] (0, 0.3) -- (10.8, 0.3);
-
-% ── Optimized row ─────────────────────────────────────────────────────────────
-\node[font=\small\bfseries\sffamily, text=NavyBlue, anchor=west] at (-0.2, -0.2)
-  {Optimized (per timestep):};
-
-\node[gpu] (og1)  at (1.3,  -1.0) {GPU\\Forward Pass};
-\node[gpu] (oc1)  at (3.7,  -1.0) {GPU\\SO(3) Sample};
-\node[gpu] (oc2)  at (6.1,  -1.0) {GPU\\Kabsch Align};
-\node[gpu] (og2)  at (8.5,  -1.0) {GPU\\Forward Pass};
-\node[font=\scriptsize\sffamily, text=MidGray] at (10.2,-1.0) {$\cdots\!\times\!50$};
+%% Optimized
+\node[font=\small\bfseries\sffamily, text=NavyBlue, anchor=west] at (-0.2, -0.0) {Optimized:};
+\node[gpu] (og1) at (1.3, -0.7) {GPU\\Forward};
+\node[gpu] (oc1) at (3.7, -0.7) {GPU\\SO(3)};
+\node[gpu] (oc2) at (6.1, -0.7) {GPU\\Kabsch};
+\node[gpu] (og2) at (8.5, -0.7) {GPU\\Forward};
+\node[lbl, text=MidGray] at (10.3, -0.7) {$\cdots\times50$};
 
 \draw[arr, GPUBlue] (og1.east) -- (oc1.west);
 \draw[arr, GPUBlue] (oc1.east) -- (oc2.west);
 \draw[arr, GPUBlue] (oc2.east) -- (og2.west);
-\draw[arr, GPUBlue] (og2.east) -- (10.0,-1.0);
+\draw[arr, GPUBlue] (og2.east) -- (10.0, -0.7);
 
-\draw[decorate, decoration={brace, amplitude=5pt, raise=2pt}, Green]
-  (oc1.north west) -- (oc2.north east)
-  node[midway, above=8pt, font=\tiny\bfseries\sffamily, text=Green]
+\draw[decorate, decoration={brace,amplitude=4pt}, Green, thick]
+  ([yshift=4pt]oc1.north west) -- ([yshift=4pt]oc2.north east)
+  node[midway, above=5pt, font=\tiny\bfseries\sffamily, text=Green]
     {Stays on GPU — no stall};
 
-\end{tikzpicture}%
-}
-\end{frame}
-
-\begin{frame}{Three Specific Bottlenecks Were Identified}
-\vspace{0.3cm}
-\begin{columns}[t]
-  \begin{column}{0.32\textwidth}
-    \begin{block}{1.\ \ SO(3) Rotation Sampling}
-      \small
-      Called 49$\times$ per design via \texttt{scipy}.\\[4pt]
-      Pulled all rotation matrices to CPU, converted to axis-angle, sampled noise on CPU, then pushed back to GPU.
-    \end{block}
-  \end{column}
-  \begin{column}{0.32\textwidth}
-    \begin{block}{2.\ \ Kabsch Superposition}
-      \small
-      Motif alignment used \texttt{numpy} SVD every timestep.\\[4pt]
-      Three full tensor copies CPU $\leftrightarrow$ GPU per step.
-    \end{block}
-  \end{column}
-  \begin{column}{0.32\textwidth}
-    \begin{block}{3.\ \ Per-step Logging Sync}
-      \small
-      Each of 50 log lines called \texttt{.tolist()} on a GPU tensor.\\[4pt]
-      Forces the GPU to flush its pipeline before continuing.
-    \end{block}
-  \end{column}
-\end{columns}
-\vspace{0.5cm}
-\begin{center}
-  \small\color{MidGray}
-  Each bottleneck repeated \textbf{49--50 times per design} — $\sim$1,000 unnecessary CPU/GPU round-trips for a 1,000-design campaign.
+\draw[NavyBlue!20, dashed] (-0.3, 0.25) -- (10.8, 0.25);
+\end{tikzpicture}
 \end{center}
 \end{frame}
 
-\begin{frame}{The A100's Slow CPU Amplified Every Round-Trip}
+\begin{frame}{Three Specific Bottlenecks Identified}
+\vspace{0.3cm}
+\begin{columns}[T]
+\begin{column}{0.32\textwidth}
+  \begin{block}{\textcolor{CPURed}{1.} \ SO(3) Rotation Sampling}
+    \small
+    Called \textbf{49$\times$} per design via \texttt{scipy}. Pulled all rotation matrices to CPU, converted to axis-angle, sampled noise, then pushed back to GPU.
+  \end{block}
+\end{column}
+\begin{column}{0.32\textwidth}
+  \begin{block}{\textcolor{CPURed}{2.} \ Kabsch Superposition}
+    \small
+    Motif alignment used \texttt{numpy} SVD every timestep. Required \textbf{three full tensor copies} to CPU and back per step.
+  \end{block}
+\end{column}
+\begin{column}{0.32\textwidth}
+  \begin{block}{\textcolor{CPURed}{3.} \ Per-step Logging Sync}
+    \small
+    Each of the 50 log lines called \texttt{.tolist()} on a GPU tensor — forcing the GPU to \textbf{flush its pipeline} before proceeding.
+  \end{block}
+\end{column}
+\end{columns}
+\vspace{0.5cm}
+\begin{center}
+\small\textcolor{MidGray}{All three happen inside the 50-timestep diffusion loop — their cost is paid 49--50 times per design.}
+\end{center}
+\end{frame}
+
+\begin{frame}{The A100's CPU Amplified the Problem}
 \begin{columns}[c]
-\begin{column}{0.48\textwidth}
+\begin{column}{0.50\textwidth}
 \begin{tikzpicture}
 \begin{axis}[
   xbar, bar width=0.55cm,
-  width=6.5cm, height=5.0cm,
+  width=7.0cm, height=5.5cm,
   xmin=0, xmax=5.5,
   xlabel={Single-Core Boost Clock (GHz)},
   xlabel style={font=\small\sffamily},
   symbolic y coords={
     {EPYC 7742 (A100)},
     {EPYC 7413 (L40)},
-    {Ryzen 5 5600 (3060)}
-  },
+    {Ryzen 5 5600 (RTX 3060)}},
   ytick=data,
-  yticklabel style={font=\scriptsize\sffamily, align=right},
+  yticklabel style={align=right, font=\scriptsize\sffamily},
+  xmajorgrids=true,
+  grid style={dashed, NavyBlue!15},
+  nodes near coords,
+  nodes near coords style={font=\scriptsize\bfseries\sffamily, text=NavyBlue},
   axis line style={NavyBlue},
   tick style={NavyBlue},
-  xmajorgrids=true,
-  grid style={dashed, LightBlue!40},
-  nodes near coords,
-  nodes near coords style={font=\scriptsize\bfseries\sffamily, color=NavyBlue},
 ]
 \addplot[fill=SteelBlue!60, draw=NavyBlue] coordinates {
-  ({EPYC 7742 (A100)},   2.25)
-  ({EPYC 7413 (L40)},    3.60)
-  ({Ryzen 5 5600 (3060)},4.40)
+  ({EPYC 7742 (A100)},        2.25)
+  ({EPYC 7413 (L40)},         3.60)
+  ({Ryzen 5 5600 (RTX 3060)}, 4.40)
 };
 \end{axis}
 \end{tikzpicture}
 \end{column}
-\begin{column}{0.48\textwidth}
+\begin{column}{0.46\textwidth}
   \small
-  The diffusion loop is \textbf{sequential Python} — single-core speed determines how fast the CPU feeds the GPU between forward passes.
+  The diffusion loop is \textbf{sequential Python} — single-core speed sets the pace between GPU forward passes.
 
-  \vspace{0.6em}
+  \vspace{0.5em}
   The EPYC 7742 is a Zen~2 server chip built for \textbf{many-core throughput}, not single-core latency.
 
-  \vspace{0.6em}
-  At 2.25~GHz, each CPU-side operation took nearly \textbf{2$\times$ longer} than on the Ryzen 5~5600 — leaving the A100 starved of work.
+  \vspace{0.5em}
+  At 2.25~GHz, each CPU-side operation took nearly \textbf{$2\times$ longer} than on the Ryzen 5~5600 — leaving the A100 starved between forward passes.
 \end{column}
 \end{columns}
 \end{frame}
 
 % ══════════════════════════════════════════════════════════════════════════════
-%  4. SOLUTIONS
+% 4. SOLUTIONS
 % ══════════════════════════════════════════════════════════════════════════════
-\sectionslide{4.\ \ Solutions Implemented}
+\sectionslide{4. \ Solutions Implemented}
 
 \begin{frame}{Four Targeted Changes — Model and Outputs Unchanged}
-\vspace{0.2cm}
-\begin{columns}[t]
-  \begin{column}{0.24\textwidth}
-    \begin{block}{SO(3) $\rightarrow$ GPU}
-      \scriptsize\color{MidGray}\texttt{diffusion.py}\\[4pt]
-      \small\color{NavyBlue}
-      Replaced \texttt{scipy} axis-angle conversion and \texttt{numpy} interpolation with native PyTorch ops. Noise sampled on-device.
-    \end{block}
-  \end{column}
-  \begin{column}{0.24\textwidth}
-    \begin{block}{Kabsch $\rightarrow$ GPU}
-      \scriptsize\color{MidGray}\texttt{utils.py}\\[4pt]
-      \small\color{NavyBlue}
-      Replaced \texttt{numpy} SVD and all \texttt{.cpu().numpy()} calls with \texttt{torch.linalg.svd}. Result stays on GPU.
-    \end{block}
-  \end{column}
-  \begin{column}{0.24\textwidth}
-    \begin{block}{Device Fixes}
-      \scriptsize\color{MidGray}\texttt{utils.py}\\[4pt]
-      \small\color{NavyBlue}
-      Corrected tensor device mismatches silently causing CPU fallbacks throughout the denoising loop.
-    \end{block}
-  \end{column}
-  \begin{column}{0.24\textwidth}
-    \begin{block}{TF32 + Log Fix}
-      \scriptsize\color{MidGray}\texttt{inference.py}\\[4pt]
-      \small\color{NavyBlue}
-      Enabled TF32 matmul on tensor cores. Removed \texttt{.tolist()} GPU pipeline flush from per-step logging.
-    \end{block}
-  \end{column}
+\vspace{0.3cm}
+\begin{columns}[T]
+\begin{column}{0.24\textwidth}
+  \begin{block}{\textcolor{Green}{1.} \ SO(3) on GPU}
+    \small
+    Replaced \texttt{scipy} axis-angle conversion and \texttt{numpy} interpolation with PyTorch native ops. Noise stays on device.
+  \end{block}
+\end{column}
+\begin{column}{0.24\textwidth}
+  \begin{block}{\textcolor{Green}{2.} \ Kabsch on GPU}
+    \small
+    Replaced \texttt{numpy} SVD with \texttt{torch.linalg.svd}. All three CPU tensor copies eliminated.
+  \end{block}
+\end{column}
+\begin{column}{0.24\textwidth}
+  \begin{block}{\textcolor{Green}{3.} \ Device Fixes}
+    \small
+    Corrected tensor device mismatches throughout the denoising loop — removed silent CPU fallbacks.
+  \end{block}
+\end{column}
+\begin{column}{0.24\textwidth}
+  \begin{block}{\textcolor{Green}{4.} \ TF32 + Log Fix}
+    \small
+    Enabled TF32 matmul on tensor cores. Removed \texttt{.tolist()} GPU flush from per-step log.
+  \end{block}
+\end{column}
 \end{columns}
 \vspace{0.5cm}
 \begin{center}
-  \small\color{MidGray}
-  No changes to model weights, architecture, or numerical outputs.
+  \small\textcolor{MidGray}{No changes to model weights, architecture, or numerical outputs.}
 \end{center}
 \end{frame}
 
 % ══════════════════════════════════════════════════════════════════════════════
-%  5. RESULTS
+% 5. RESULTS
 % ══════════════════════════════════════════════════════════════════════════════
-\sectionslide{5.\ \ Results}
+\sectionslide{5. \ Results}
 
 \begin{frame}{1.5--2 Minutes Saved Per Design}
 \begin{columns}[c]
 \begin{column}{0.50\textwidth}
 \begin{tikzpicture}
 \begin{axis}[
-  ybar=6pt, bar width=0.9cm,
-  width=7.2cm, height=5.5cm,
-  ymin=0, ymax=20,
+  ybar=5pt, bar width=1.0cm,
+  width=7.2cm, height=5.8cm,
+  ymin=0, ymax=19,
   ylabel={Minutes per Design},
   ylabel style={font=\small\sffamily},
-  symbolic x coords={RTX 3060, A100},
+  symbolic x coords={RTX~3060, A100},
   xtick=data,
   xticklabel style={font=\small\sffamily},
   yticklabel style={font=\small\sffamily},
-  axis line style={NavyBlue},
-  tick style={NavyBlue},
   ymajorgrids=true,
-  grid style={dashed, LightBlue!40},
+  grid style={dashed, NavyBlue!15},
   legend style={at={(0.97,0.97)}, anchor=north east,
                 font=\scriptsize\sffamily, draw=NavyBlue!30},
   nodes near coords,
-  nodes near coords style={font=\scriptsize\bfseries\sffamily, color=NavyBlue},
+  nodes near coords style={font=\scriptsize\bfseries\sffamily},
+  axis line style={NavyBlue},
+  tick style={NavyBlue},
 ]
 \addplot[fill=SteelBlue!45, draw=NavyBlue] coordinates {
-  (RTX 3060, 10.5) (A100, 16.0)
+  (RTX~3060, 10.5) (A100, 16.0)
 };
-\addplot[fill=Green!55, draw=Green!70!black] coordinates {
-  (RTX 3060, 9.0) (A100, 14.5)
+\addplot[fill=Green!55, draw=Green!80!black] coordinates {
+  (RTX~3060, 9.0) (A100, 14.5)
 };
 \legend{Before, After}
 \end{axis}
 \end{tikzpicture}
 \end{column}
 \begin{column}{0.46\textwidth}
-  \begin{block}{RTX 3060\ \ \textcolor{Green}{$-14\%$}}
-    \small $10.5 \rightarrow 9.0$ min/design\\[4pt]
-    GPU fully saturated at 100\%. Gains from eliminating CPU stall time between forward passes.
+  \begin{block}{RTX 3060 \ \textcolor{Green}{$\mathbf{-14\%}$}}
+    \small $10.5 \to 9.0$ min per design.\\
+    GPU now fully saturated at $B{=}1$. Gains came from eliminating CPU stall time.
   \end{block}
   \vspace{0.4cm}
-  \begin{block}{A100\ \ \textcolor{Green}{$-9\%$}}
-    \small $16.0 \rightarrow 14.5$ min/design\\[4pt]
-    CPU single-core speed (2.25~GHz) remains a limiting factor. Further gains require batching.
+  \begin{block}{A100 \ \textcolor{Green}{$\mathbf{-9\%}$}}
+    \small $16.0 \to 14.5$ min per design.\\
+    CPU single-core (2.25~GHz) is still a bottleneck. Larger gains require batching.
   \end{block}
 \end{column}
 \end{columns}
 \end{frame}
 
 % ══════════════════════════════════════════════════════════════════════════════
-%  6. HARDWARE LANDSCAPE
+% 6. HARDWARE LANDSCAPE
 % ══════════════════════════════════════════════════════════════════════════════
-\sectionslide{6.\ \ Hardware Landscape}
+\sectionslide{6. \ Hardware Landscape}
 
-\begin{frame}{Each Machine Has a Different Bottleneck}
+\begin{frame}{GPU Utilization Reveals the Bottleneck Per Machine}
 \vspace{0.3cm}
-\begin{center}
-\begin{tabular}{lcccc}
-  \toprule
-  & \textbf{RTX 3060} & \textbf{A100} & \textbf{L40} \\
-  \midrule
-  VRAM          & 12 GB & 80 GB & 48 GB \\
-  GPU Util.\ (B=1) & \textcolor{Green}{\textbf{$\sim$100\%}} & \textcolor{CPURed}{\textbf{15--30\%}} & \textcolor{CPURed}{\textbf{15--30\%}} \\
-  CPU Arch.     & Zen 3 & Zen 2 & Zen 3 \\
-  CPU Boost     & \textcolor{Green}{\textbf{4.4 GHz}} & \textcolor{CPURed}{\textbf{2.25 GHz}} & \textcolor{Amber}{\textbf{3.6 GHz}} \\
-  Bottleneck    & \textcolor{GPUBlue}{\textbf{GPU}} & \textcolor{CPURed}{\textbf{CPU}} & \textcolor{Green}{\textbf{Neither}} \\
-  Batching (B=8)& \textcolor{CPURed}{No (12 GB)} & \textcolor{Green}{Yes (80 GB)} & \textcolor{Green}{Yes (48 GB)} \\
-  \bottomrule
-\end{tabular}
-\end{center}
-\vspace{0.5cm}
 \begin{columns}[c]
-  \begin{column}{0.45\textwidth}
-    \small The RTX~3060 is \textbf{accidentally efficient} at $B{=}1$ — its smaller GPU is fully saturated by a single design.
-  \end{column}
-  \begin{column}{0.50\textwidth}
-    \small The \textbf{L40 is the best target for campaigns}: Zen~3 CPU (feeds the GPU quickly) and 48~GB VRAM (enables batching).
-  \end{column}
+\begin{column}{0.55\textwidth}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{lccc}
+\toprule
+& \textbf{RTX 3060} & \textbf{A100} & \textbf{L40} \\
+\midrule
+VRAM         & 12 GB & 80 GB & 48 GB \\
+GPU Util.    & \textcolor{Green}{$\sim$100\%} & \textcolor{CPURed}{15--30\%} & \textcolor{CPURed}{15--30\%} \\
+CPU Boost    & \textcolor{Green}{4.4 GHz} & \textcolor{CPURed}{2.25 GHz} & \textcolor{Amber}{3.6 GHz} \\
+CPU Arch     & Zen 3 & Zen 2 & Zen 3 \\
+Bottleneck   & \textcolor{GPUBlue}{\textbf{GPU}} & \textcolor{CPURed}{\textbf{CPU}} & \textcolor{Green}{\textbf{Neither}} \\
+\bottomrule
+\end{tabular}
+\vspace{0.3cm}
+
+\small\textcolor{Green}{\textbf{L40 is the target platform}} for large campaigns.
+\end{column}
+\begin{column}{0.42\textwidth}
+  \small
+  The RTX~3060 is \textbf{accidentally efficient} at $B{=}1$: its modest GPU is fully saturated by a single design.
+
+  \vspace{0.5em}
+  The A100 and L40 are \textbf{underutilised} at $B{=}1$ — built for large parallel workloads.
+
+  \vspace{0.5em}
+  The L40 combines a faster server CPU \textbf{(Zen~3)} with \textbf{48~GB VRAM} — enough headroom to batch multiple designs per forward pass.
+\end{column}
 \end{columns}
 \end{frame}
 
 % ══════════════════════════════════════════════════════════════════════════════
-%  7. FUTURE WORK
+% 7. FUTURE WORK
 % ══════════════════════════════════════════════════════════════════════════════
-\sectionslide{7.\ \ Future Work}
+\sectionslide{7. \ Future Work}
 
-\begin{frame}{Batching Would Unlock the Full Potential of the L40 and A100}
+\begin{frame}{Batching Would Unlock the Full Potential of the L40}
 \vspace{0.2cm}
+\begin{columns}[T]
+\begin{column}{0.60\textwidth}
 \begin{tikzpicture}[
-  container/.style={draw=NavyBlue!25, fill=NavyBlue!4, rounded corners=3pt,
-                    minimum width=8.6cm, minimum height=0.9cm},
+  bar/.style={draw=NavyBlue!25, fill=NavyBlue!5, rounded corners=3pt,
+              minimum width=10.5cm, minimum height=0.85cm},
   dbox/.style={draw=GPUBlue, fill=GPUBlue!25, rounded corners=2pt,
-               minimum width=2.2cm, minimum height=0.7cm,
+               minimum width=2.4cm, minimum height=0.65cm,
                font=\scriptsize\bfseries\sffamily, text=GPUBlue},
-  gbox/.style={draw=Green!60, fill=Green!18, rounded corners=2pt,
-               minimum width=0.88cm, minimum height=0.7cm,
-               font=\tiny\bfseries\sffamily, text=Green!70!black}
+  gbox/.style={draw=Green!70, fill=Green!18, rounded corners=2pt,
+               minimum width=1.08cm, minimum height=0.65cm,
+               font=\tiny\bfseries\sffamily, text=Green!80!black},
+  lbl/.style={font=\small\bfseries\sffamily, text=NavyBlue}
 ]
+  % B=1
+  \node[lbl] at (3.5, 2.5) {Current: $B = 1$};
+  \node[bar] at (3.5, 1.8) {};
+  \node[dbox] at (0.2, 1.8) {Design 1};
+  \node[font=\scriptsize\sffamily, text=MidGray] at (4.5, 1.8)
+    {GPU idle};
+  \node[font=\tiny\sffamily, text=MidGray] at (3.5, 1.1)
+    {$\approx$15--30\% GPU utilisation on A100/L40};
 
-% ── B=1 ──────────────────────────────────────────────────────────────────────
-\node[font=\small\bfseries\sffamily, text=NavyBlue, anchor=west] at (0, 2.4)
-  {Current: $B = 1$};
-\node[container] (box1) at (4.3, 1.7) {};
-\node[dbox] at (1.1, 1.7) {Design 1};
-\node[font=\scriptsize\sffamily, text=MidGray] at (5.3, 1.7)
-  {GPU idle — waiting for next design};
-\node[font=\tiny\sffamily, text=MidGray] at (4.3, 1.1)
-  {$\approx$15--30\% GPU utilisation on A100 / L40};
+  % Arrow
+  \draw[-{Stealth}, NavyBlue!40, line width=1.2pt] (3.5, 0.9) -- (3.5, 0.55);
 
-% Arrow
-\draw[-{Stealth[scale=1.1]}, NavyBlue!35, line width=1.5pt] (4.3, 0.85) -- (4.3, 0.5);
-
-% ── B=8 ──────────────────────────────────────────────────────────────────────
-\node[font=\small\bfseries\sffamily, text=NavyBlue, anchor=west] at (0, 0.2)
-  {With Batching: $B = 8$};
-\node[container] (box8) at (4.3, -0.5) {};
-\foreach \i in {1,...,8}{
-  \node[gbox] at ({0.05 + (\i-1)*1.075}, -0.5) {\i};
-}
-\node[font=\tiny\sffamily, text=MidGray] at (4.3, -1.15)
-  {$\approx$4--6$\times$ throughput on A100 (80 GB VRAM)};
-
-% Side note
-\node[draw=Amber!50, fill=Amber!7, rounded corners=4pt,
-      text width=3.8cm, align=flush left, inner sep=8pt,
-      font=\small\sffamily]
-  at (11.0, 0.6) {
-    \textbf{\textcolor{Amber}{Requires:}}\\[4pt]
-    \textcolor{MidGray}{%
-      $\bullet$\ Data pipeline batching\\
-      $\bullet$\ Batched ContigMap\\
-      $\bullet$\ Denoising loop refactor%
-    }
-  };
+  % B=8
+  \node[lbl] at (3.5, 0.3) {With Batching: $B = 8$};
+  \node[bar] at (3.5, -0.4) {};
+  \foreach \i in {1,...,8}{
+    \node[gbox] at ({-4.1 + (\i-1)*1.18cm}, -0.4) {\i};
+  }
+  \node[font=\tiny\sffamily, text=MidGray] at (3.5, -1.1)
+    {$\approx$4--6$\times$ throughput · same model load · one GPU};
 \end{tikzpicture}
+\end{column}
+\begin{column}{0.37\textwidth}
+  \begin{alertblock}{Requires Refactoring}
+    \small
+    \begin{itemize}\setlength\itemsep{3pt}
+      \item Stack $B$ designs per forward pass
+      \item ContigMap supports variable lengths
+      \item Denoising loop handles batched tensors
+    \end{itemize}
+  \end{alertblock}
+  \vspace{0.3cm}
+  \small\textcolor{MidGray}{Estimated: $\sim$1--2 min per design on A100 at $B{=}8$, vs.\ 14.5 min today.}
+\end{column}
+\end{columns}
 \end{frame}
 
 \begin{frame}{Roadmap}
 \vspace{0.5cm}
-\begin{tikzpicture}
-  \draw[NavyBlue!25, line width=2.5pt] (0,0) -- (12,0);
+\begin{center}
+\begin{tikzpicture}[
+  dot/.style={circle, minimum size=10pt, inner sep=0pt},
+  lbl/.style={font=\small\bfseries\sffamily, align=center},
+  sub/.style={font=\tiny\sffamily, text=MidGray, align=center}
+]
+  \draw[NavyBlue!25, line width=2pt] (0,0) -- (12,0);
 
-  \foreach \x/\phase/\detail/\col/\done in {
-    0/{Phase 0}/{Baseline \\ 10.5 min/design}/MidGray/1,
-    4/{Phase 1 $\checkmark$}/{GPU Ports + Fixes \\ 9.0 min/design}/Green/1,
-    8/{Phase 2}/{Batching ($B{=}8$) \\ $\sim$1--2 min/design}/SteelBlue/0,
-    12/{Phase 3}/{L40 Deployment \\ Campaign scale}/NavyBlue/0
-  }{
-    \ifnum\done=1
-      \filldraw[\col] (\x,0) circle (7pt);
-    \else
-      \draw[\col, dashed, thick] (\x,0) circle (7pt);
-      \filldraw[white] (\x,0) circle (5.5pt);
-    \fi
-    \node[font=\small\bfseries\sffamily, text=\col, align=center, above=0.35cm]
-      at (\x,0) {\phase};
-    \node[font=\tiny\sffamily, text=MidGray, align=center, below=0.35cm]
-      at (\x,0) {\detail};
-  }
+  % Phase 0
+  \filldraw[MidGray] (0,0) circle (5pt);
+  \node[lbl, text=MidGray, above=8pt] at (0,0) {Phase 0};
+  \node[sub, below=8pt] at (0,0) {Original Baseline\\10.5 min / design};
+
+  % Phase 1 (done)
+  \filldraw[Green] (4,0) circle (5pt);
+  \node[lbl, text=Green, above=8pt] at (4,0) {Phase 1 \checkmark};
+  \node[sub, below=8pt] at (4,0) {GPU Ports + Fixes\\9.0 min / design};
+
+  % Phase 2
+  \draw[SteelBlue, dashed, thick] (8,0) circle (5pt);
+  \node[lbl, text=SteelBlue, above=8pt] at (8,0) {Phase 2};
+  \node[sub, below=8pt] at (8,0) {Batching ($B{=}8$)\\\textasciitilde{}1--2 min / design};
+
+  % Phase 3
+  \draw[NavyBlue, dashed, thick] (12,0) circle (5pt);
+  \node[lbl, text=NavyBlue, above=8pt] at (12,0) {Phase 3};
+  \node[sub, below=8pt] at (12,0) {L40 Deployment\\Full Campaign Scale};
 \end{tikzpicture}
+\end{center}
 \end{frame}
 
 % ══════════════════════════════════════════════════════════════════════════════
-%  SUMMARY
+% SUMMARY
 % ══════════════════════════════════════════════════════════════════════════════
 \begin{frame}{Summary}
-\vspace{0.2cm}
-\begin{columns}[t]
-  \begin{column}{0.24\textwidth}
-    \begin{block}{Root Cause}
-      \small
-      CPU--GPU round-trips every diffusion timestep starved the GPU pipeline — worsened by the EPYC 7742's low single-core clock.
-    \end{block}
-  \end{column}
-  \begin{column}{0.24\textwidth}
-    \begin{block}{What We Did}
-      \small
-      Ported SO(3) sampling and Kabsch alignment to native PyTorch. Fixed device inconsistencies and removed GPU sync from logging.
-    \end{block}
-  \end{column}
-  \begin{column}{0.24\textwidth}
-    \begin{block}{Result}
-      \small
-      \textbf{14\% faster} on RTX~3060 (10.5 $\to$ 9.0 min). GPU at 100\% utilisation — single-design ceiling reached.
-    \end{block}
-  \end{column}
-  \begin{column}{0.24\textwidth}
-    \begin{block}{Next Step}
-      \small
-      Batched inference ($B{=}8$) on the L40. Estimated \textbf{4--6$\times$} throughput for large design campaigns.
-    \end{block}
-  \end{column}
+\vspace{0.3cm}
+\begin{columns}[T]
+\begin{column}{0.24\textwidth}
+  \begin{block}{Root Cause}
+    \small CPU--GPU round-trips every diffusion timestep. Worsened by the EPYC 7742's low single-core clock.
+  \end{block}
+\end{column}
+\begin{column}{0.24\textwidth}
+  \begin{block}{What We Did}
+    \small Ported SO(3) and Kabsch to PyTorch. Fixed device mismatches. Removed GPU sync from logging.
+  \end{block}
+\end{column}
+\begin{column}{0.24\textwidth}
+  \begin{block}{Result}
+    \small \textbf{14\% faster} on RTX~3060 (10.5 $\to$ 9.0 min). GPU fully saturated at $B{=}1$.
+  \end{block}
+\end{column}
+\begin{column}{0.24\textwidth}
+  \begin{block}{Next Step}
+    \small Batched inference ($B{=}8$) on L40. Estimated \textbf{4--6$\times$} throughput for campaign-scale runs.
+  \end{block}
+\end{column}
 \end{columns}
 \end{frame}
 
-% ── Thank you ─────────────────────────────────────────────────────────────────
+% Thank you
 \begin{frame}[plain]
 \begin{tikzpicture}[remember picture, overlay]
   \fill[NavyBlue] (current page.south west) rectangle (current page.north east);
   \node[white, font=\Large\bfseries\sffamily] at (current page.center) {Thank You};
-  \node[LightBlue, font=\normalsize\sffamily, below=0.7cm of current page.center]
+  \node[LightBlue, font=\normalsize\sffamily, below=0.5cm of current page.center]
     {Questions?};
 \end{tikzpicture}
 \end{frame}
