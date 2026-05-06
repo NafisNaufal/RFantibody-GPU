@@ -340,25 +340,25 @@
 \sectionslide{5. \ Results}
 
 \begin{frame}{1.5--2 Minutes Saved Per Design}
-\begin{columns}[c]
-\begin{column}{0.50\textwidth}
+\begin{center}
 \begin{tikzpicture}
 \begin{axis}[
-  ybar=4pt, bar width=0.8cm,
-  width=5.8cm, height=5.0cm,
+  ybar=6pt, bar width=1.1cm,
+  width=10.0cm, height=5.2cm,
   ymin=0, ymax=19,
   ylabel={Minutes per Design},
   ylabel style={font=\small\sffamily},
   symbolic x coords={RTX~3060, A100},
   xtick=data,
-  xticklabel style={font=\small\sffamily},
+  xticklabel style={font=\normalsize\sffamily},
   yticklabel style={font=\small\sffamily},
   ymajorgrids=true,
   grid style={dashed, NavyBlue!15},
-  legend style={at={(0.97,0.97)}, anchor=north east,
-                font=\scriptsize\sffamily, draw=NavyBlue!30},
+  legend style={at={(0.98,0.98)}, anchor=north east,
+                font=\small\sffamily, draw=NavyBlue!30},
   axis line style={NavyBlue},
   tick style={NavyBlue},
+  enlarge x limits=0.35,
 ]
 \addplot[fill=SteelBlue!45, draw=NavyBlue] coordinates {
   (RTX~3060, 10.5) (A100, 16.0)
@@ -369,16 +369,17 @@
 \legend{Before, After}
 \end{axis}
 \end{tikzpicture}
-\end{column}
-\begin{column}{0.46\textwidth}
+\end{center}
+\vspace{0.1cm}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
   \begin{block}{RTX 3060 \ \textcolor{Green}{$\mathbf{-14\%}$}}
-    \small $10.5 \to 9.0$ min per design.\\
-    GPU now fully saturated at $B{=}1$. Gains came from eliminating CPU stall time.
+    \small $10.5 \to 9.0$ min. GPU fully saturated — gains from eliminating CPU stall time.
   \end{block}
-  \vspace{0.4cm}
+\end{column}
+\begin{column}{0.48\textwidth}
   \begin{block}{A100 \ \textcolor{Green}{$\mathbf{-9\%}$}}
-    \small $16.0 \to 14.5$ min per design.\\
-    CPU single-core (2.25~GHz) is still a bottleneck. Larger gains require batching.
+    \small $16.0 \to 14.5$ min. CPU single-core (2.25~GHz) still a bottleneck — batching needed.
   \end{block}
 \end{column}
 \end{columns}
