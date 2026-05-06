@@ -183,6 +183,7 @@
 
 \begin{frame}{CPU--GPU Round-Trips Stalled the Pipeline Every Timestep}
 \vspace{0.3cm}
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
   gpu/.style={draw=GPUBlue, fill=GPUBlue!18, rounded corners=3pt,
               minimum width=2.1cm, minimum height=0.75cm,
@@ -238,7 +239,8 @@
   node[midway, above=8pt, font=\tiny\bfseries\sffamily, text=Green]
     {Stays on GPU — no stall};
 
-\end{tikzpicture}
+\end{tikzpicture}%
+}
 \end{frame}
 
 \begin{frame}{Three Specific Bottlenecks Were Identified}
