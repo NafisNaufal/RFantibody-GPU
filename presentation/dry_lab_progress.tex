@@ -204,10 +204,10 @@
 \node[gpu] (g2)   at (8.5,  1.0) {GPU\\Forward Pass};
 \node[font=\scriptsize\sffamily, text=MidGray] at (10.2, 1.0) {$\cdots\!\times\!50$};
 
-\draw[arr, GPUBlue] (g1.east) -- node[above, font=\tiny\sffamily, text=CPURed]
+\draw[arr, GPUBlue] (g1.east) -- node[below, font=\tiny\sffamily, text=CPURed]
   {.cpu()} (c1.west);
 \draw[arr, CPURed]  (c1.east) -- (c2.west);
-\draw[arr, CPURed]  (c2.east) -- node[above, font=\tiny\sffamily, text=GPUBlue]
+\draw[arr, CPURed]  (c2.east) -- node[below, font=\tiny\sffamily, text=GPUBlue]
   {.to(gpu)} (g2.west);
 \draw[arr, GPUBlue] (g2.east) -- (10.0, 1.0);
 
