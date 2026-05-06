@@ -128,13 +128,13 @@
 \begin{axis}[
   ybar, bar width=1.1cm,
   width=6.8cm, height=5.8cm,
-  ymin=0, ymax=20,
+  ymin=0, ymax=18,
   ylabel={Minutes per Design},
   ylabel style={font=\small\sffamily},
   symbolic x coords={RTX~3060\\(Desktop), A100\\(Server)},
   xtick=data,
   xticklabel style={align=center, font=\small\sffamily},
-  ytick={0,5,10,15,20},
+  ytick={0,5,10,15},
   yticklabel style={font=\small\sffamily},
   ymajorgrids=true,
   grid style={dashed, NavyBlue!15},
@@ -145,7 +145,7 @@
 ]
 \addplot[fill=SteelBlue!60, draw=NavyBlue] coordinates {
   ({RTX~3060\\(Desktop)}, 10.5)
-  ({A100\\(Server)},       16.0)
+  ({A100\\(Server)},       15.0)
 };
 \end{axis}
 \end{tikzpicture}
@@ -153,12 +153,12 @@
 \begin{column}{0.47\textwidth}
   \begin{block}{The Paradox}
     \small
-    The A100 has \textbf{6$\times$ the compute} of an RTX~3060, yet was \textbf{52\% slower} per design.
+    The A100 has \textbf{6$\times$ the compute} of an RTX~3060, yet was \textbf{43\% slower} per design.
   \end{block}
   \vspace{0.5cm}
   \begin{alertblock}{At 1{,}000 Designs}
     \small
-    \textbf{A100:} $\approx$267 hours\\
+    \textbf{A100:} $\approx$250 hours\\
     \textbf{RTX 3060:} $\approx$175 hours\\[4pt]
     The expensive server was the wrong choice.
   \end{alertblock}
@@ -345,7 +345,7 @@
 \begin{axis}[
   ybar=6pt, bar width=1.1cm,
   width=10.0cm, height=5.2cm,
-  ymin=0, ymax=19,
+  ymin=0, ymax=18,
   ylabel={Minutes per Design},
   ylabel style={font=\small\sffamily},
   symbolic x coords={RTX~3060, A100},
@@ -361,10 +361,10 @@
   enlarge x limits=0.35,
 ]
 \addplot[fill=SteelBlue!45, draw=NavyBlue] coordinates {
-  (RTX~3060, 10.5) (A100, 16.0)
+  (RTX~3060, 10.5) (A100, 15.0)
 };
 \addplot[fill=Green!55, draw=Green!80!black] coordinates {
-  (RTX~3060, 9.0) (A100, 14.5)
+  (RTX~3060, 9.0) (A100, 12.0)
 };
 \legend{Before, After}
 \end{axis}
@@ -378,8 +378,8 @@
   \end{block}
 \end{column}
 \begin{column}{0.48\textwidth}
-  \begin{block}{A100 \ \textcolor{Green}{$\mathbf{-9\%}$}}
-    \small $16.0 \to 14.5$ min. CPU single-core (2.25~GHz) still a bottleneck — batching needed.
+  \begin{block}{A100 \ \textcolor{Green}{$\mathbf{-20\%}$}}
+    \small $15.0 \to 12.0$ min. CPU single-core (2.25~GHz) still a bottleneck — batching needed.
   \end{block}
 \end{column}
 \end{columns}
@@ -432,29 +432,29 @@ Bottleneck   & \textcolor{GPUBlue}{\textbf{GPU}} & \textcolor{CPURed}{\textbf{CP
 \begin{center}
 \begin{tikzpicture}[
   bar/.style={draw=NavyBlue!25, fill=NavyBlue!5, rounded corners=3pt,
-              minimum width=12.0cm, minimum height=0.8cm},
+              minimum width=9.6cm, minimum height=0.8cm},
   dbox/.style={draw=GPUBlue, fill=GPUBlue!25, rounded corners=2pt,
-               minimum width=2.6cm, minimum height=0.6cm,
+               minimum width=2.2cm, minimum height=0.6cm,
                font=\scriptsize\bfseries\sffamily, text=GPUBlue},
   gbox/.style={draw=Green!70, fill=Green!18, rounded corners=2pt,
-               minimum width=1.2cm, minimum height=0.6cm,
+               minimum width=0.95cm, minimum height=0.6cm,
                font=\scriptsize\bfseries\sffamily, text=Green!80!black},
   lbl/.style={font=\small\bfseries\sffamily, text=NavyBlue}
 ]
   % B=1 row
   \node[lbl] at (0, 2.2) {Current: $B=1$};
   \node[bar] at (0, 1.55) {};
-  \node[dbox] at (-4.2, 1.55) {Design 1};
-  \node[font=\scriptsize\sffamily, text=MidGray] at (1.5, 1.55) {GPU idle ($\approx$15--30\% utilisation)};
+  \node[dbox] at (-3.5, 1.55) {Design 1};
+  \node[font=\scriptsize\sffamily, text=MidGray] at (1.2, 1.55) {GPU idle ($\approx$15--30\% utilisation)};
 
   % Arrow
   \draw[-{Stealth}, NavyBlue!40, line width=1.2pt] (0, 1.05) -- (0, 0.65);
 
-  % B=8 row
+  % B=8 row  (8 boxes × 1.05cm spacing, centred: start = -(7×1.05)/2 = -3.675)
   \node[lbl] at (0, 0.35) {With Batching: $B=8$};
   \node[bar] at (0, -0.35) {};
   \foreach \i in {1,...,8}{
-    \node[gbox] at ({-4.95 + (\i-1)*1.41cm}, -0.35) {\i};
+    \node[gbox] at ({-3.675 + (\i-1)*1.05cm}, -0.35) {\i};
   }
   \node[font=\tiny\sffamily, text=MidGray] at (0, -0.95)
     {$\approx$4--6$\times$ throughput · same model load · one GPU};
@@ -474,7 +474,7 @@ Bottleneck   & \textcolor{GPUBlue}{\textbf{GPU}} & \textcolor{CPURed}{\textbf{CP
 \end{column}
 \begin{column}{0.42\textwidth}
   \vspace{0.15cm}
-  \small\textcolor{MidGray}{Estimated: $\sim$1--2 min per design on A100 at $B{=}8$, vs.\ 14.5 min today.}
+  \small\textcolor{MidGray}{Estimated: $\sim$2--3 min per design on A100 at $B{=}8$, vs.\ 12 min today.}
 \end{column}
 \end{columns}
 \end{frame}
