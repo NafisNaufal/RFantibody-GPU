@@ -16,13 +16,13 @@ TARGET_PDB="scripts/examples/example_inputs/InlA.pdb"
 FRAMEWORK_PDB="scripts/examples/example_inputs/Scaffold.pdb"
 OUTPUT_DIR="designs/inla_diffusion_mpnn"
 
-NUM_DESIGNS=1000
+NUM_DESIGNS=100
 DESIGN_LOOPS="H1:10,H2:6,H3:16"
 HOTSPOTS="A389,A387,A369,A326"
 DIFFUSER_T=50
 
-NUM_SEQS=4
-SAMPLING_TEMP=0.2
+NUM_SEQS=10
+SAMPLING_TEMP=0.1
 
 # ============================================================================
 # SETUP
