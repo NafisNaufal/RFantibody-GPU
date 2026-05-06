@@ -264,11 +264,8 @@
   xmin=0, xmax=5.5,
   xlabel={Single-Core Boost Clock (GHz)},
   xlabel style={font=\small\sffamily},
-  symbolic y coords={
-    {EPYC 7742 (A100)},
-    {EPYC 7413 (L40)},
-    {Ryzen 5 5600 (RTX 3060)}},
-  ytick=data,
+  ytick={1,2,3},
+  yticklabels={EPYC 7742 \\ (A100), EPYC 7413 \\ (L40), Ryzen 5 5600 \\ (RTX 3060)},
   yticklabel style={align=right, font=\scriptsize\sffamily},
   xmajorgrids=true,
   grid style={dashed, NavyBlue!15},
@@ -278,9 +275,9 @@
   tick style={NavyBlue},
 ]
 \addplot[fill=SteelBlue!60, draw=NavyBlue] coordinates {
-  ({EPYC 7742 (A100)},        2.25)
-  ({EPYC 7413 (L40)},         3.60)
-  ({Ryzen 5 5600 (RTX 3060)}, 4.40)
+  (2.25, 1)
+  (3.60, 2)
+  (4.40, 3)
 };
 \end{axis}
 \end{tikzpicture}
