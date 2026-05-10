@@ -25,13 +25,13 @@ FRAMEWORK_PDB="scripts/examples/example_inputs/Scaffold.pdb"
 OUTPUT_DIR="designs/inla_pipeline"
 
 # RFdiffusion parameters
-NUM_DESIGNS=1
+NUM_DESIGNS=100
 DESIGN_LOOPS="H1:10,H2:6,H3:16"
 HOTSPOTS="A389,A387,A369,A326"
 DIFFUSER_T=50
 
 # ProteinMPNN parameters
-NUM_SEQS=4
+NUM_SEQS=10
 SAMPLING_TEMP=0.1
 
 # RF2 parameters
