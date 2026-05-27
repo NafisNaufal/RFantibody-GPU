@@ -18,12 +18,12 @@ TARGET_PDB="scripts/examples/example_inputs/2Z1P.pdb"
 FRAMEWORK_PDB="scripts/examples/example_inputs/Scaffold.pdb"
 OUTPUT_DIR="designs/ace_pipeline_2"
 
-NUM_DESIGNS=100
+NUM_DESIGNS=200
 DESIGN_LOOPS="H1:10,H2:6,H3:16"
 HOTSPOTS="A206,A300,A301,A304"
 DIFFUSER_T=50
 
-NUM_SEQS=10
+NUM_SEQS=8
 SAMPLING_TEMP=0.1
 
 HOTSPOT_SHOW_PROP=0.0
