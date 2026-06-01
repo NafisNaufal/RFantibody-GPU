@@ -71,8 +71,10 @@ resume_rf2() {
         return 0
     fi
 
-    # Find unprocessed tags
-    uv run qvls "$DIR/3_rf2.qv"         | sort > /tmp/rf2_done.txt
+    # Find unprocessed tags.
+    # RF2 appends _best to each tag (e.g. samples_design_0_dldesign_0_best)
+    # while MPNN tags have no suffix. Strip _best before comparing.
+    uv run qvls "$DIR/3_rf2.qv"         | sed 's/_best$//' | sort > /tmp/rf2_done.txt
     uv run qvls "$DIR/2_proteinmpnn.qv" | sort > /tmp/rf2_all.txt
     comm -23 /tmp/rf2_all.txt /tmp/rf2_done.txt > /tmp/rf2_remaining.txt
 
