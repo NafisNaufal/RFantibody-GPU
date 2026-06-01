@@ -48,6 +48,15 @@ resume_rf2() {
         return 1
     fi
 
+    # If a previous resume was also OOM-killed, 3_rf2_remaining.qv may exist
+    # with partial results. Merge it into 3_rf2.qv first before recalculating.
+    if [ -f "$DIR/3_rf2_remaining.qv" ]; then
+        echo "  Found leftover 3_rf2_remaining.qv — merging into 3_rf2.qv first..."
+        cat "$DIR/3_rf2.qv" "$DIR/3_rf2_remaining.qv" > "$DIR/3_rf2_complete.qv"
+        mv "$DIR/3_rf2_complete.qv" "$DIR/3_rf2.qv"
+        rm -f "$DIR/3_rf2_remaining.qv"
+    fi
+
     local TOTAL DONE REMAINING
     TOTAL=$(uv run qvls "$DIR/2_proteinmpnn.qv" | wc -l)
     DONE=$(uv run qvls "$DIR/3_rf2.qv" | wc -l)
