@@ -50,11 +50,14 @@ resume_rf2() {
 
     # If a previous resume was also OOM-killed, 3_rf2_remaining.qv may exist
     # with partial results. Merge it into 3_rf2.qv first before recalculating.
+    # Dedup immediately after merge so DONE count is always accurate.
     if [ -f "$DIR/3_rf2_remaining.qv" ]; then
-        echo "  Found leftover 3_rf2_remaining.qv — merging into 3_rf2.qv first..."
+        echo "  Found leftover 3_rf2_remaining.qv — merging and deduplicating..."
         cat "$DIR/3_rf2.qv" "$DIR/3_rf2_remaining.qv" > "$DIR/3_rf2_complete.qv"
         mv "$DIR/3_rf2_complete.qv" "$DIR/3_rf2.qv"
         rm -f "$DIR/3_rf2_remaining.qv"
+        uv run python scripts/dedup_qv.py "$DIR/3_rf2.qv" "$DIR/3_rf2_dedup.qv"
+        mv "$DIR/3_rf2_dedup.qv" "$DIR/3_rf2.qv"
     fi
 
     local TOTAL DONE REMAINING
