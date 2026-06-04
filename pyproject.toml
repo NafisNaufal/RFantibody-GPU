@@ -24,6 +24,7 @@ dependencies = [
     "pyrsistent",
     "click>=8.0.0",
     "pandas",
+    "matplotlib>=3.10.9",
 ]
 
 [project.optional-dependencies]
