@@ -195,7 +195,9 @@ def main():
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    stem = Path(args.qv).stem  # e.g. ace_1st_rf2
+    # Use parent dir name + stem so designs/ace_pipeline/3_rf2.qv → ace_pipeline_3_rf2
+    qv_path = Path(args.qv)
+    stem = f"{qv_path.parent.name}_{qv_path.stem}"
 
     print(f"\n{'='*54}")
     print(f"  Screening: {args.qv}")
